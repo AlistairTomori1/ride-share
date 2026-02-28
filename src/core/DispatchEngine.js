@@ -13,16 +13,39 @@ class DispatchEngine
 
     matchDriversToRides()
     {
-        let curr = this.DriverList.head;
-        while(curr !== null)
+        let currRider = this.RiderList.head;
+        while(currRider !== null)
         {
-            this.assignDriver(curr);
+            let currDriver = this.DriverList.head;
+            let currDist;
+            let bestDist = Infinity;
+            let bestDriver = null;
+            while(currDriver !== null)
+            {
+                currDist = this.findDistance(currDriver, currRider);
+                if (currDist < bestDist)
+                {
+                    bestDist = currDist;
+                    bestDriver = currDriver;
+                }
+                currDriver = currDriver.nextl;
+            }
+            this.assignDriver(currRider.data, bestDriver.data);
+            currRider = currRider.next;
         }
     }
 
-    assignDriver()
+    assignDriver(rider, driver)
     {
 
+    }
+
+    findDistance(driver, rider)
+    {
+        let xDist = abs(driver.location.x - rider.location.x);
+        let yDist = abs(driver.location.y - rider.location.y);
+        let dist = Math.sqrt((xDist ** 2) + (yDist ** 2));
+        return(dist);
     }
 
 }
