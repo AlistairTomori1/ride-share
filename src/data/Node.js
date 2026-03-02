@@ -1,10 +1,6 @@
-Class Node {
-    constructor(_id) {
+class Node {
+    constructor(data) {
         this.next = null;
-        this.id = _id;
-    }
-
-    display() {
-        console.log(this.id);
+        this.data = data;
     }
 }

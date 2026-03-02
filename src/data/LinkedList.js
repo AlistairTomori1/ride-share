@@ -1,41 +1,38 @@
-Class LinkedList {
+import Node from "./Node";
+class LinkedList {
     constructor() {
         this.head = null;
         this.size = 1;
     }
   
-    addLink() {
-        let link = new Link(this.size);
+    addLink(data) {
+        let newNode = new Node(data);
         if (this.head === null) {
-            this.head = link;
+            this.head = newNode;
         }
         else {
             let curr = this.head;
             while (curr.next !== null) {
                 curr = curr.next;
-                curr.next = link;
+                curr.next = newNode;
             }
-        }
-    }
-  
-    displayList() {
-        let curr = this.head;
-        while (curr !== null) {
-            text (this.id, 100, this.id*50);
-            curr = curr.next;
         }
     }
 
-    remove(n) {
-        let prev = null; 
+    remove(data) {
+        if (this.head === null)
+            return;
+        if (this.head.data === data)
+            this.head = this.head.next;
         let curr = this.head;
-        while (curr.id !== n) {
-            prev = curr;
-            curr = curr.next; 
-            if (curr === null) {
+        while (curr.next !== null)
+        {
+            if (curr.next.data === data)
+            {
+                curr.next = curr.next.next;
                 return;
             }
+            curr = curr.next;
         }
-        prev.next = curr.next;
     }
 }
