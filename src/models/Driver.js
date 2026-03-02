@@ -4,5 +4,7 @@ class Driver
     {
         this.id = id;
         this.location = location;
+        this.state = "AVAILABLE";
+        this.assignedRider = null;
     }
 }

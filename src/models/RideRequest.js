@@ -4,5 +4,7 @@ class RideRequest
     {
         this.id = id;
         this.location = location;
+        this.state = "WAITING";
+        this.assignedDriver = null;
     }
 }

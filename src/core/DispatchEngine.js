@@ -20,15 +20,15 @@ class DispatchEngine
             let currDist;
             let bestDist = Infinity;
             let bestDriver = null;
-            while(currDriver !== null)
+            while(currDriver !== null && currDriver.data.state == "WAITING")
             {
                 currDist = this.findDistance(currDriver.data, currRider.data);
-                if (currDist < bestDist)
+                if (currDist < bestDist && currDriver.data.state == "AVAILABLE")
                 {
                     bestDist = currDist;
                     bestDriver = currDriver;
                 }
-                currDriver = currDriver.nextl;
+                currDriver = currDriver.next;
             }
             this.assignDriver(currRider, bestDriver);
             currRider = currRider.next;
@@ -37,7 +37,10 @@ class DispatchEngine
 
     assignDriver(rider, driver)
     {
-
+        driver.state = "BUSY";
+        driver.assignedRider = rider;
+        rider.assignedDriver = driver;
+        rider.state = "MATCHED";
     }
 
     findDistance(driver, rider)
