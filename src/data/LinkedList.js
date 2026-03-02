@@ -35,4 +35,28 @@ class LinkedList {
             curr = curr.next;
         }
     }
+
+    search(predicate)
+    {
+        let curr = this.head;
+        while (curr !== null)
+        {
+            if (predicate(curr.data))
+            {
+                return curr;
+            }
+            curr = curr.next;
+
+        }
+        return;
+    }
+    traverse(callback)
+    {
+        curr = this.head;
+        while (curr !== null)
+        {
+            callback(curr.data);
+        }
+        curr = curr.next;
+    }
 }
