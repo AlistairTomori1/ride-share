@@ -1,10 +1,13 @@
 class Driver
 {
-    constructor(id, location)
+    constructor(id, location, capacity, amenities = [])
     {
         this.id = id;
         this.location = location;
+        this.capacity = capacity;
+        this.amenities = amenities;
         this.state = "AVAILABLE";
         this.assignedRider = null;
+        this.busyTimer = 0;
     }
 }
