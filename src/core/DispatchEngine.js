@@ -22,7 +22,7 @@ class DispatchEngine
             let bestDriver = null;
             while(currDriver !== null)
             {
-                currDist = this.findDistance(currDriver, currRider);
+                currDist = this.findDistance(currDriver.data, currRider.data);
                 if (currDist < bestDist)
                 {
                     bestDist = currDist;
@@ -30,7 +30,7 @@ class DispatchEngine
                 }
                 currDriver = currDriver.nextl;
             }
-            this.assignDriver(currRider.data, bestDriver.data);
+            this.assignDriver(currRider, bestDriver);
             currRider = currRider.next;
         }
     }
