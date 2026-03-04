@@ -4,3 +4,4 @@ class Node {
         this.data = data;
     }
 }
+export default Node;

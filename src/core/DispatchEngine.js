@@ -1,13 +1,18 @@
+import Scoring from "./Scoring.js";
 class DispatchEngine
 {
     constructor(DriverList, RiderList)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
+        this.eventLog = new LinkedList();
+        this.scoring = new Scoring();
     }
 
     update()
     {
+        this.updateWaitingRiders();
+        this.updateBusyDrivers();
         this.matchDriversToRides();
     }
 
@@ -16,18 +21,18 @@ class DispatchEngine
         let currRider = this.RiderList.head;
         while(currRider !== null)
         {
-            if (currRider === "WAITING")
+            if (currRider.data.state === "WAITING")
             {
             let currDriver = this.DriverList.head;
-            let currDist;
-            let bestDist = Infinity;
+            let currScore;
+            let bestScore = Infinity;
             let bestDriver = null;
             while(currDriver !== null)
             {
-                currDist = this.findDistance(currDriver.data, currRider.data);
-                if (currDist < bestDist && currDriver.data.state == "AVAILABLE")
+                currScore = this.scoring.calculateScore(currDriver.data, currRider.data);
+                if (currScore < bestScore && currDriver.data.state == "AVAILABLE")
                 {
-                    bestDist = currDist;
+                    bestScore = currScore;
                     bestDriver = currDriver.data;
                 }
                 currDriver = currDriver.next;
@@ -45,14 +50,64 @@ class DispatchEngine
         driver.assignedRider = rider;
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
+        driver.busyTimer = 5;
+    }
+    updateBusyDrivers()
+    {
+        let curr = this.DriverList.head;
+
+        while (curr !== null)
+        {
+            let driver = curr.data;
+
+            if (driver.state === "BUSY")
+            {
+                driver.busyTimer--;
+
+                if (driver.busyTimer <= 0)
+                {
+                    driver.state = "AVAILABLE";
+                    driver.assignedRider = null;
+                }  
+            }
+            curr = curr.next;
+        }
     }
 
-    findDistance(driver, rider)
+    updateWaitingRiders()
     {
-        let xDist = abs(driver.location.x - rider.location.x);
-        let yDist = abs(driver.location.y - rider.location.y);
-        let dist = Math.sqrt((xDist ** 2) + (yDist ** 2));
-        return(dist);
+        let curr = this.RiderList.head;
+        let prev = null;
+
+        while (curr !== null)
+        {
+            let rider = curr.data;
+
+            if (driver.state === "WAITING")
+            {
+                rider.waitTimer--;
+
+                if (rider.waitTimer <= 0)
+                {
+                    rider.state = "EXPIRED";
+
+                    if (prev === null)
+                    {
+                        this.RiderList.head = curr.next;
+                        curr = this.RiderList.head;
+                    }
+                    else
+                    {
+                        prev.next = curr.next;
+                        curr = prev.next;
+                    }
+
+                    continue;
+                }
+            }
+            prev = curr;
+            curr = curr.next;
+        }
     }
 
 }

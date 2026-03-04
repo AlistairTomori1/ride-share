@@ -1,4 +1,4 @@
-import Node from "./Node";
+import Node from "./Node.js";
 class LinkedList {
     constructor() {
         this.head = null;
@@ -13,9 +13,9 @@ class LinkedList {
         else {
             let curr = this.head;
             while (curr.next !== null) {
-                curr = curr.next;
-                curr.next = newNode;
+                curr = curr.next; 
             }
+            curr.next = newNode;
         }
     }
 
@@ -52,7 +52,7 @@ class LinkedList {
     }
     traverse(callback)
     {
-        curr = this.head;
+        let curr = this.head;
         while (curr !== null)
         {
             callback(curr.data);

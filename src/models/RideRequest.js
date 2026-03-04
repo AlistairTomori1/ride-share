@@ -9,5 +9,6 @@ class RideRequest
         this.requestTime = millis();
         this.state = "WAITING";
         this.assignedDriver = null;
+        this.waitTimer = 10;
     }
 }
