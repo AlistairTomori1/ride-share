@@ -1,3 +1,4 @@
+export default Node;
 class Node {
     constructor(data) {
         this.next = null;
