@@ -46,3 +46,4 @@ class Scoring
         return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider));
     }
 }
+export default Scoring;
