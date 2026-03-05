@@ -1,4 +1,4 @@
-class Scoring
+export default class Scoring
 {
     constructor()
     {
@@ -46,4 +46,3 @@ class Scoring
         return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider));
     }
 }
-export default Scoring;

@@ -1,5 +1,5 @@
 import Node from "./Node.js";
-class LinkedList {
+export default class LinkedList {
     constructor() {
         this.head = null;
         this.size = 1;

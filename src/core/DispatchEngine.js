@@ -1,5 +1,5 @@
 import Scoring from "./Scoring.js";
-class DispatchEngine
+export default class DispatchEngine
 {
     constructor(DriverList, RiderList)
     {

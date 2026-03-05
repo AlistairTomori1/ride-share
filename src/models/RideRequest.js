@@ -1,4 +1,4 @@
-class RideRequest
+export default class RideRequest
 {
     constructor(id, location, passengers, amenitiesRequired = [])
     {
