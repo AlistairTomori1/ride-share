@@ -1,17 +1,18 @@
 import SimulationController from "./core/SimulationController.js";
+import RideRequest from "./models/RideRequest.js";
+import Driver from "./models/Driver.js";
+import DispatchEngine from "./core/DispatchEngine.js";
 
 // TODO: define spawn timing variables
 let spawnInterval;
 let lastSpawnTime;
-
-// TODO: define any canvas/map constants
-let canvasWidth;
-let canvasHeight;
-
+const Simulation = new SimulationController();
+let canvas, ctx;
+let riderLength = 0;
 function setup()
 {
-    const canvas = document.getElementById("simCanvas");
-    const ctx = canvas.getContext("2d");
+    canvas = document.getElementById("simCanvas");
+    ctx = canvas.getContext("2d");
 
     // Set size
     canvas.width = 800;
@@ -24,10 +25,20 @@ function setup()
     ctx.arc(400, 300, 20, 0, Math.PI * 2);
     ctx.fill();
 
+    for (let i = 0; i < 10; i++)
+    {
+        spawnDriver(i);
+    }
 
-    // TODO: initialize simulation controller
+    for (let i = 0; i < 5; i++)
+        {
+            spawnRider(i);
+            riderLength += 1;
+        }
 
-    // TODO: seed initial drivers
+    console.log(Simulation.driverList);
+    console.log(Simulation.riderList);
+    draw();
 
     // TODO: optionally seed initial riders
 }
@@ -40,16 +51,24 @@ function setup()
 function draw()
 {
     // TODO: advance simulation (sim.tick())
+    Simulation.tick();
 
-    // TODO: handle rider spawning logic
-
-    // TODO: clear background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if (Math.floor(Math.random() * 120) == 1)
+    {
+        spawnRider(riderLength)
+        riderLength += 1;
+    }
 
     // TODO: draw drivers
 
     // TODO: draw riders
 
     // TODO: display simulation stats
+
+    requestAnimationFrame(draw);
 }
 
 
@@ -57,31 +76,32 @@ function draw()
 // Spawning Functions
 // ===============================
 
-function spawnRider()
+function spawnRider(id)
 {
-    // TODO: generate random location
+    let location = [Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)];
 
-    // TODO: generate passenger count
+    let passengers = Math.floor(Math.random() * 8);
 
-    // TODO: generate required amenities
+    let amenities = [];
 
-    // TODO: create RideRequest object
+    let request = new RideRequest(id, location, passengers, amenities)
 
-    // TODO: add rider to simulation
+    Simulation.addRider(request);
 }
 
 
-function spawnDriver()
+function spawnDriver(id)
 {
-    // TODO: generate random location
 
-    // TODO: generate capacity
+    let location = [Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)];
+    
+    let capacity = Math.floor(Math.random() * 8 + 4);
 
-    // TODO: generate amenities
+    let amenities = [];
 
-    // TODO: create Driver object
+    let driver = new Driver(id, location, capacity, amenities)
 
-    // TODO: add driver to simulation
+    Simulation.addDriver(driver);
 }
 
 

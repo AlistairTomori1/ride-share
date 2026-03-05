@@ -1,4 +1,6 @@
-import Scoring from "./Scoring.js";
+import Scoring from "../utils/Scoring.js";
+import LinkedList from "../data/LinkedList.js";
+import SimulationController from "./SimulationController.js";
 export default class DispatchEngine
 {
     constructor(DriverList, RiderList)
@@ -11,8 +13,8 @@ export default class DispatchEngine
 
     update()
     {
-        this.updateWaitingRiders();
-        this.updateBusyDrivers();
+        //this.updateWaitingRiders();
+        //this.updateBusyDrivers();
         this.matchDriversToRides();
     }
 
@@ -51,6 +53,7 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
+        console.log(rider.assignedDriver.id + ", " + driver.assignedRider.id)
     }
     updateBusyDrivers()
     {
@@ -83,7 +86,7 @@ export default class DispatchEngine
         {
             let rider = curr.data;
 
-            if (driver.state === "WAITING")
+            if (rider.state === "WAITING")
             {
                 rider.waitTimer--;
 
