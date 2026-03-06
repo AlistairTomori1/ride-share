@@ -56,7 +56,7 @@ export default class LinkedList {
         while (curr !== null)
         {
             callback(curr.data);
+            curr = curr.next;
         }
-        curr = curr.next;
     }
 }

@@ -3,7 +3,6 @@ import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
 import DispatchEngine from "./core/DispatchEngine.js";
 
-// TODO: define spawn timing variables
 let spawnInterval;
 let lastSpawnTime;
 const Simulation = new SimulationController();
@@ -13,12 +12,8 @@ function setup()
 {
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
-
-    // Set size
     canvas.width = 800;
     canvas.height = 600;
-
-    // Optional: background color
     canvas.style.backgroundColor = "#e0e0e0";
     ctx.fillStyle = "blue";
     ctx.beginPath();
@@ -43,38 +38,26 @@ function setup()
     // TODO: optionally seed initial riders
 }
 
-
-// ===============================
-// Main Draw Loop
-// ===============================
-
 function draw()
 {
-    // TODO: advance simulation (sim.tick())
     Simulation.tick();
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    if (Math.floor(Math.random() * 120) == 1)
-    {
-        spawnRider(riderLength)
-        riderLength += 1;
-    }
+    //if (Math.floor(Math.random() * 240) == 1)
+    //{
+        //spawnRider(riderLength)
+        //riderLength += 1;
+    //}
 
-    // TODO: draw drivers
-
-    // TODO: draw riders
+    drawDrivers();
+    drawRiders();
 
     // TODO: display simulation stats
 
     requestAnimationFrame(draw);
 }
-
-
-// ===============================
-// Spawning Functions
-// ===============================
 
 function spawnRider(id)
 {
@@ -84,7 +67,7 @@ function spawnRider(id)
 
     let amenities = [];
 
-    let request = new RideRequest(id, location, passengers, amenities)
+    let request = new RideRequest(id, location, passengers, amenities);
 
     Simulation.addRider(request);
 }
@@ -99,39 +82,38 @@ function spawnDriver(id)
 
     let amenities = [];
 
-    let driver = new Driver(id, location, capacity, amenities)
+    let driver = new Driver(id, location, capacity, amenities);
 
     Simulation.addDriver(driver);
 }
 
-
-// ===============================
-// Drawing Functions
-// ===============================
-
 function drawDrivers()
 {
-    // TODO: traverse driver list
+    let curr = Simulation.driverList.head;
+        while (curr !== null)
+        {
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(curr.data.location[0], curr.data.location[1], 25, 25);
+            ctx.fillStyle = "black";
+            ctx.fillText(curr.data.id, curr.data.location[0], curr.data.location[1])
+            curr = curr.next;
+        }
 
-    // TODO: determine color based on state
-
-    // TODO: draw driver at location
 }
 
 
 function drawRiders()
 {
-    // TODO: traverse rider list
-
-    // TODO: determine color based on state
-
-    // TODO: draw rider at location
+     let curr = Simulation.riderList.head;
+        while (curr !== null)
+        {
+            ctx.fillStyle = "#18cc00";
+            ctx.fillRect(curr.data.location[0], curr.data.location[1], 25, 25);
+            ctx.fillStyle = "black";
+            ctx.fillText(curr.data.assignedDriver.id, curr.data.location[0], curr.data.location[1])
+            curr = curr.next;
+        }
 }
-
-
-// ===============================
-// Utility / Display Functions
-// ===============================
 
 function displayStats()
 {
@@ -143,11 +125,6 @@ function displayStats()
 
     // TODO: display completed/expired counts
 }
-
-
-// ===============================
-// Optional Interaction Functions
-// ===============================
 
 function mousePressed()
 {
