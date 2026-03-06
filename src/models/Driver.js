@@ -1,5 +1,4 @@
-class Driver
-{
+export default class Driver {
     constructor(id, location, capacity, amenities = [])
     {
         this.id = id;
@@ -9,5 +8,5 @@ class Driver
         this.state = "AVAILABLE";
         this.assignedRider = null;
         this.busyTimer = 0;
-    }
+}
 }

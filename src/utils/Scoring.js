@@ -1,4 +1,4 @@
-class Scoring
+export default class Scoring
 {
     constructor()
     {
@@ -7,8 +7,8 @@ class Scoring
 
     scoreDistance(driver, rider)
     {
-        let xDist = Math.abs(driver.location.x - rider.location.x);
-        let yDist = Math.abs(driver.location.y - rider.location.y);
+        let xDist = Math.abs(driver.location[0] - rider.location[0]);
+        let yDist = Math.abs(driver.location[1] - rider.location[1]);
         let dist = Math.sqrt((xDist ** 2) + (yDist ** 2));
         return(dist);
     }
