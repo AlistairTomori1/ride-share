@@ -8,19 +8,21 @@ let lastSpawnTime;
 const Simulation = new SimulationController();
 let canvas, ctx;
 let riderLength = 0;
+let height = 800;
+let width = 1200;
+let size = 40;
+
+let carImg = new Image();
+carImg.src = "./assets/car-red.png";
+
 function setup()
 {
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
-    canvas.width = 800;
-    canvas.height = 600;
-    canvas.style.backgroundColor = "#e0e0e0";
-    ctx.fillStyle = "blue";
-    ctx.beginPath();
-    ctx.arc(400, 300, 20, 0, Math.PI * 2);
-    ctx.fill();
+    canvas.width = width;
+    canvas.height = height;
 
-    for (let i = 0; i < 10; i++)
+    for (let i = 0; i < 5; i++)
     {
         spawnDriver(i);
     }
@@ -42,8 +44,9 @@ function draw()
 {
     Simulation.tick();
 
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid(size);
     
     //if (Math.floor(Math.random() * 240) == 1)
     //{
@@ -54,20 +57,25 @@ function draw()
     drawDrivers();
     drawRiders();
 
-    // TODO: display simulation stats
+    displayStats();
 
     requestAnimationFrame(draw);
 }
 
 function spawnRider(id)
 {
-    let location = [Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)];
+    let location = [0, 0];
+    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
+        location = [(size * Math.floor(Math.random() * width/size)) - 10, (size * Math.floor(Math.random() * height/size)) - 10];
 
     let passengers = Math.floor(Math.random() * 8);
 
     let amenities = [];
 
-    let request = new RideRequest(id, location, passengers, amenities);
+    let dropOff = [0, 0];
+    while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size)
+        dropOff = [(size * Math.floor(Math.random() * width/size)) - 10, (size * Math.floor(Math.random() * height/size)) - 10];
+    let request = new RideRequest(id, location, passengers, amenities, dropOff);
 
     Simulation.addRider(request);
 }
@@ -76,8 +84,10 @@ function spawnRider(id)
 function spawnDriver(id)
 {
 
-    let location = [Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)];
-    
+    let location = [0, 0];
+    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
+        location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
+
     let capacity = Math.floor(Math.random() * 8 + 4);
 
     let amenities = [];
@@ -92,10 +102,7 @@ function drawDrivers()
     let curr = Simulation.driverList.head;
         while (curr !== null)
         {
-            ctx.fillStyle = "#ff0000";
-            ctx.fillRect(curr.data.location[0], curr.data.location[1], 25, 25);
-            ctx.fillStyle = "black";
-            ctx.fillText(curr.data.id, curr.data.location[0], curr.data.location[1])
+            ctx.drawImage(carImg, curr.data.location[0]-20, curr.data.location[1]-20, 40, 40);
             curr = curr.next;
         }
 
@@ -108,11 +115,31 @@ function drawRiders()
         while (curr !== null)
         {
             ctx.fillStyle = "#18cc00";
-            ctx.fillRect(curr.data.location[0], curr.data.location[1], 25, 25);
+            ctx.fillRect(curr.data.location[0], curr.data.location[1], 20, 20);
             ctx.fillStyle = "black";
-            ctx.fillText(curr.data.assignedDriver.id, curr.data.location[0], curr.data.location[1])
+            if (curr.data.assignedDriver.id !== null)
+                ctx.fillText(curr.data.assignedDriver.id, curr.data.location[0]+8, curr.data.location[1]+12)
             curr = curr.next;
         }
+}
+
+function drawGrid(size)
+{
+    ctx.strokeStyle = '#3c3c3c'; 
+    for (let x = 0; x < width; x+= size)
+    {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < height; y+= size)
+    {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
 }
 
 function displayStats()

@@ -4,10 +4,11 @@ const minutes = now.getMinutes();
 const seconds = now.getSeconds();
 export default class RideRequest
 {
-    constructor(id, location, passengers, amenitiesRequired = [])
+    constructor(id, location, passengers, amenitiesRequired = [], dropOff)
     {
         this.id = id;
         this.location = location;
+        this.dropOff = dropOff;
         this.passengers = passengers;
         this.amenitiesRequired = amenitiesRequired;
         this.requestTime = `${hours}:${minutes}:${seconds}`
