@@ -13,7 +13,9 @@ let width = 1200;
 let size = 40;
 
 let carImg = new Image();
-carImg.src = "./assets/car-red.png";
+let carImgBusy = new Image();
+carImgBusy.src = "./assets/car-red.png";
+carImg.src = "./assets/car-green.png";
 
 function setup()
 {
@@ -50,7 +52,7 @@ function draw()
     ctx.fillRect(1200, 0, 50, canvas.height);
     drawGrid(size);
     
-    if (Math.floor(Math.random() * 1000) == 1)
+    if (Math.floor(Math.random() * 400) == 1)
     {
         spawnRider(riderLength)
         riderLength += 1;
@@ -104,7 +106,11 @@ function drawDrivers()
     let curr = Simulation.driverList.head;
         while (curr !== null)
         {
-            ctx.drawImage(carImg, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
+            if (curr.data.state == "AVAILABLE")
+                ctx.drawImage(carImg, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
+            else
+                ctx.drawImage(carImgBusy, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
+
             curr = curr.next;
         }
 
@@ -162,7 +168,7 @@ function displayStats()
     curr = Simulation.riderList.head;
     while (curr !== null)
     {
-        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 120 + spacing);
+        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 150 + spacing);
         curr = curr.next;
         spacing += 30;
     }
