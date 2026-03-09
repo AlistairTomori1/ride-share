@@ -19,7 +19,7 @@ function setup()
 {
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
-    canvas.width = width;
+    canvas.width = width + 275;
     canvas.height = height;
 
     for (let i = 0; i < 5; i++)
@@ -46,6 +46,8 @@ function draw()
 
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(1200, 0, 50, canvas.height);
     drawGrid(size);
     
     //if (Math.floor(Math.random() * 240) == 1)
@@ -144,6 +146,8 @@ function drawGrid(size)
 
 function displayStats()
 {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(Math.floor(Simulation.time/60), 10, 100);
     // TODO: display current simulation time
 
     // TODO: display number of drivers
