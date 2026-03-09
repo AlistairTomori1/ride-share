@@ -23,7 +23,10 @@ export default class LinkedList {
         if (this.head === null)
             return;
         if (this.head.data === data)
+        {
             this.head = this.head.next;
+            return;
+        }
         let curr = this.head;
         while (curr.next !== null)
         {
