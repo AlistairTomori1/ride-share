@@ -50,11 +50,11 @@ function draw()
     ctx.fillRect(1200, 0, 50, canvas.height);
     drawGrid(size);
     
-    //if (Math.floor(Math.random() * 240) == 1)
-    //{
-        //spawnRider(riderLength)
-        //riderLength += 1;
-    //}
+    if (Math.floor(Math.random() * 1000) == 1)
+    {
+        spawnRider(riderLength)
+        riderLength += 1;
+    }
 
     drawDrivers();
     drawRiders();
@@ -104,7 +104,7 @@ function drawDrivers()
     let curr = Simulation.driverList.head;
         while (curr !== null)
         {
-            ctx.drawImage(carImg, curr.data.location[0]-20, curr.data.location[1]-20, 40, 40);
+            ctx.drawImage(carImg, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
             curr = curr.next;
         }
 
@@ -119,7 +119,7 @@ function drawRiders()
             ctx.fillStyle = "#18cc00";
             ctx.fillRect(curr.data.location[0], curr.data.location[1], 20, 20);
             ctx.fillStyle = "black";
-            if (curr.data.assignedDriver.id !== null)
+            if (curr.data.state == "MATCHED")
                 ctx.fillText(curr.data.assignedDriver.id, curr.data.location[0]+8, curr.data.location[1]+12)
             curr = curr.next;
         }
@@ -147,12 +147,25 @@ function drawGrid(size)
 function displayStats()
 {
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(Math.floor(Simulation.time/60), 10, 100);
-    // TODO: display current simulation time
+    ctx.font = "20px serif";
+    ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", 1280, 80);
 
-    // TODO: display number of drivers
+    let curr = Simulation.driverList.head;
+    let spacing = 30;
+    while (curr !== null)
+    {
+        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 120 + spacing);
+        curr = curr.next;
+        spacing += 30;
+    }
 
-    // TODO: display number of waiting riders
+    curr = Simulation.riderList.head;
+    while (curr !== null)
+    {
+        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 120 + spacing);
+        curr = curr.next;
+        spacing += 30;
+    }
 
     // TODO: display completed/expired counts
 }

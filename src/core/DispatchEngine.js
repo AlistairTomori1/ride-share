@@ -48,7 +48,7 @@ export default class DispatchEngine
 
     assignDriver(rider, driver)
     {
-        driver.state = "BUSY";
+        driver.state = "PICKING UP";
         driver.assignedRider = rider;
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
@@ -63,7 +63,7 @@ export default class DispatchEngine
         {
             let driver = curr.data;
 
-            if (driver.state === "BUSY")
+            if (driver.state === "PICKING UP")
             {
                 driver.busyTimer--;
 

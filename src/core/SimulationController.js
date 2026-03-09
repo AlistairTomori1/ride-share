@@ -28,10 +28,45 @@ export default class SimulationController
         this.time++;
         console.log("tick");
         this.dispatchEngine.update();
+        this.moveDrivers();
     }
     
     runSim()
     {
         this.tick();
     }
+
+    moveDrivers()
+    {
+        let curr = this.driverList.head;
+        while (curr !== null)
+        {
+            if (curr.data.state == "PICKING UP")
+            {
+            if (curr.data.location[0] !== curr.data.assignedRider.location[0])
+                curr.data.location[0] += Math.sign(curr.data.assignedRider.location[0] - curr.data.location[0]) * 1;
+            else if (curr.data.location[1] !== curr.data.assignedRider.location[1])
+                curr.data.location[1] += Math.sign(curr.data.assignedRider.location[1] - curr.data.location[1]) * 1;
+            else
+            {
+                curr.data.assignedRider.state = "PICKED UP";
+                curr.data.state = "DROPPING OFF";
+            }
+            }
+
+            if (curr.data.state == "DROPPING OFF")
+            {
+            if (curr.data.location[0] !== curr.data.assignedRider.dropOff[0])
+                curr.data.location[0] += Math.sign(curr.data.assignedRider.dropOff[0] - curr.data.location[0]) * 1;
+            else if (curr.data.location[1] !== curr.data.assignedRider.dropOff[1])
+                curr.data.location[1] += Math.sign(curr.data.assignedRider.dropOff[1] - curr.data.location[1]) * 1;
+            else
+            {
+                curr.data.state = "AVAILABLE";
+                curr.data.assignedRider.state = "DROPPED OFF";
+            }
+        }
+            curr = curr.next;
+    }
+}
 }
