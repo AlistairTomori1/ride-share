@@ -108,10 +108,19 @@ function drawDrivers()
     let curr = Simulation.driverList.head;
         while (curr !== null)
         {
+            
             if (curr.data.state == "AVAILABLE")
-                ctx.drawImage(carImg, curr.data.location[0]-20, curr.data.location[1]-20, 40, 40);
+            {
+                ctx.drawImage(carImg, curr.data.location[0]-20,  curr.data.location[1]-20, 40, 40);
+            }
             else
-                ctx.drawImage(carImgBusy, curr.data.location[0]-20, curr.data.location[1]-20, 40, 40);
+            {
+                ctx.save();
+                ctx.translate(curr.data.location[0], curr.data.location[1]);
+                ctx.rotate(curr.data.rotation);
+                ctx.drawImage(carImgBusy, -20, -20, 40, 40);
+                ctx.restore();
+            }
 
             curr = curr.next;
         }
