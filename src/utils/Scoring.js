@@ -17,8 +17,8 @@ export default class Scoring
     {
         if (driver.capacity < rider.passengers)
             return Infinity;
-
-        return(1);
+        else
+            return(1);
 
     }
 

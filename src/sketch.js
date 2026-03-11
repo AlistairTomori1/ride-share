@@ -12,6 +12,8 @@ let height = 800;
 let width = 1200;
 let size = 40;
 
+let amenities = ["Child seat", "Pet", "Wheelchair"];
+
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
@@ -73,15 +75,20 @@ function spawnRider(id)
     while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let passengers = Math.floor(Math.random() * 8);
+    let passengers = Math.floor(Math.random() * 8) + 1;
+    let amenitiesRequired = [];
 
-    let amenities = [];
+    for (let i = 0; i < amenities.length; i++)
+    {
+        if (Math.random() > 0.90)
+            amenitiesRequired.push(amenities[i]);
+    }
 
     let dropOff = [0, 0];
     while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size)
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
     console.log(dropOff);
-    let request = new RideRequest(id, location, passengers, amenities, dropOff);
+    let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff);
 
     Simulation.addRider(request);
 }
@@ -94,11 +101,16 @@ function spawnDriver(id)
     while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let capacity = Math.floor(Math.random() * 8 + 4);
+    let capacity = Math.floor(Math.random() * 5) + 4;
 
-    let amenities = [];
+    let amenitiesAvailable = [];
+    for (let i = 0; i < amenities.length; i++)
+    {
+        if (Math.random() > 0.90)
+            amenitiesAvailable.push(amenities[i]);
+    }
 
-    let driver = new Driver(id, location, capacity, amenities);
+    let driver = new Driver(id, location, capacity, amenitiesAvailable);
 
     Simulation.addDriver(driver);
 }
@@ -142,6 +154,8 @@ function drawRiders()
                 ctx.arc(curr.data.dropOff[0], curr.data.dropOff[1], 10, 0, Math.PI * 2);
                 ctx.fill();
             }
+            else if (curr.data.state == "EXPIRED")
+                Simulation.riderList.remove(curr.data);
             curr = curr.next;
         }
 }
@@ -169,7 +183,7 @@ function drawGrid(size)
 function displayStats()
 {
     ctx.fillStyle = '#ffffff';
-    ctx.font = "20px serif";
+    ctx.font = "16px serif";
     ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", 1280, 80);
 
     let curr = Simulation.driverList.head;
@@ -177,6 +191,16 @@ function displayStats()
     while (curr !== null)
     {
         ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 120 + spacing);
+        if (curr.data.amenities.length > 0)
+        {
+            spacing += 30;
+            ctx.fillText(curr.data.capacity + " seats, has: " + curr.data.amenities, 1280, 120 + spacing);
+        }
+        else 
+        {
+            spacing += 30;
+            ctx.fillText(curr.data.capacity + " seats", 1280, 120 + spacing);
+        }
         curr = curr.next;
         spacing += 30;
     }
@@ -185,6 +209,17 @@ function displayStats()
     while (curr !== null)
     {
         ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 150 + spacing);
+        if (curr.data.amenitiesRequired.length > 0)
+        {
+            spacing += 30;
+            ctx.fillText(curr.data.passengers + " people, " + curr.data.amenitiesRequired + " needed", 1280, 150 + spacing);
+        }
+        else
+        {
+            spacing += 30;
+            ctx.fillText(curr.data.passengers + " people, ", 1280, 150 + spacing);
+
+        }
         curr = curr.next;
         spacing += 30;
     }
@@ -229,16 +264,6 @@ function drawRoute()
         }
         curr = curr.next;
     }
-}
-
-function mousePressed()
-{
-    // TODO: optionally spawn rider on click
-}
-
-function keyPressed()
-{
-    // TODO: optionally control simulation speed
 }
 
 window.onload = function()
