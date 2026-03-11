@@ -13,7 +13,7 @@ export default class DispatchEngine
 
     update()
     {
-        //this.updateWaitingRiders();
+        this.updateWaitingRiders();
         //this.updateBusyDrivers();
         this.matchDriversToRides();
     }
@@ -80,35 +80,20 @@ export default class DispatchEngine
     updateWaitingRiders()
     {
         let curr = this.RiderList.head;
-        let prev = null;
 
         while (curr !== null)
         {
             let rider = curr.data;
 
-            if (rider.state === "WAITING")
+            if (rider.state === "WAITING" && rider.assignedDriver === null)
             {
                 rider.waitTimer--;
 
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
-
-                    if (prev === null)
-                    {
-                        this.RiderList.head = curr.next;
-                        curr = this.RiderList.head;
-                    }
-                    else
-                    {
-                        prev.next = curr.next;
-                        curr = prev.next;
-                    }
-
-                    continue;
                 }
             }
-            prev = curr;
             curr = curr.next;
         }
     }

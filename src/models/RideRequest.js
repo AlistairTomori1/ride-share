@@ -14,6 +14,6 @@ export default class RideRequest
         this.requestTime = `${hours}:${minutes}:${seconds}`
         this.state = "WAITING";
         this.assignedDriver = null;
-        this.waitTimer = 10;
+        this.waitTimer = 600;
     }
 }
