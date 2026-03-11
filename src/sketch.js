@@ -60,6 +60,7 @@ function draw()
 
     drawDrivers();
     drawRiders();
+    drawRoute();
 
     displayStats();
 
@@ -70,7 +71,7 @@ function spawnRider(id)
 {
     let location = [0, 0];
     while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
-        location = [(size * Math.floor(Math.random() * width/size)) - 10, (size * Math.floor(Math.random() * height/size)) - 10];
+        location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
     let passengers = Math.floor(Math.random() * 8);
 
@@ -78,7 +79,8 @@ function spawnRider(id)
 
     let dropOff = [0, 0];
     while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size)
-        dropOff = [(size * Math.floor(Math.random() * width/size)) - 10, (size * Math.floor(Math.random() * height/size)) - 10];
+        dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
+    console.log(dropOff);
     let request = new RideRequest(id, location, passengers, amenities, dropOff);
 
     Simulation.addRider(request);
@@ -106,10 +108,19 @@ function drawDrivers()
     let curr = Simulation.driverList.head;
         while (curr !== null)
         {
+            
             if (curr.data.state == "AVAILABLE")
-                ctx.drawImage(carImg, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
+            {
+                ctx.drawImage(carImg, curr.data.location[0]-20,  curr.data.location[1]-20, 40, 40);
+            }
             else
-                ctx.drawImage(carImgBusy, curr.data.location[0]-10, curr.data.location[1]-20, 40, 40);
+            {
+                ctx.save();
+                ctx.translate(curr.data.location[0], curr.data.location[1]);
+                ctx.rotate(curr.data.rotation);
+                ctx.drawImage(carImgBusy, -20, -20, 40, 40);
+                ctx.restore();
+            }
 
             curr = curr.next;
         }
@@ -123,10 +134,14 @@ function drawRiders()
         while (curr !== null)
         {
             ctx.fillStyle = "#18cc00";
-            ctx.fillRect(curr.data.location[0], curr.data.location[1], 20, 20);
-            ctx.fillStyle = "black";
-            if (curr.data.state == "MATCHED")
-                ctx.fillText(curr.data.assignedDriver.id, curr.data.location[0]+8, curr.data.location[1]+12)
+            ctx.fillRect(curr.data.location[0]-10, curr.data.location[1]-10, 20, 20);
+
+            if (curr.data.state == "PICKED UP")
+            {
+                ctx.beginPath();
+                ctx.arc(curr.data.dropOff[0], curr.data.dropOff[1], 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
             curr = curr.next;
         }
 }
@@ -134,6 +149,7 @@ function drawRiders()
 function drawGrid(size)
 {
     ctx.strokeStyle = '#3c3c3c'; 
+    ctx.lineWidth = 1;
     for (let x = 0; x < width; x+= size)
     {
         ctx.beginPath();
@@ -174,6 +190,45 @@ function displayStats()
     }
 
     // TODO: display completed/expired counts
+}
+
+function drawRoute()
+{
+    let curr = Simulation.driverList.head;
+
+    while (curr !== null)
+    {
+        if (curr.data.state == "PICKING UP")
+        {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(curr.data.location[0], curr.data.location[1]);
+        ctx.lineTo(curr.data.assignedRider.location[0], curr.data.location[1]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(curr.data.assignedRider.location[0], curr.data.location[1]);
+        ctx.lineTo(curr.data.assignedRider.location[0], curr.data.assignedRider.location[1]);
+        ctx.stroke();
+        }
+
+        if (curr.data.state == "DROPPING OFF")
+        {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(curr.data.location[0], curr.data.location[1]);
+        ctx.lineTo(curr.data.assignedRider.dropOff[0], curr.data.location[1]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(curr.data.assignedRider.dropOff[0], curr.data.location[1]);
+        ctx.lineTo(curr.data.assignedRider.dropOff[0], curr.data.assignedRider.dropOff[1]);
+        ctx.stroke();
+        }
+        curr = curr.next;
+    }
 }
 
 function mousePressed()

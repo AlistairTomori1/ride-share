@@ -8,5 +8,6 @@ export default class Driver {
         this.state = "AVAILABLE";
         this.assignedRider = null;
         this.busyTimer = 0;
+        this.rotation = 0;
 }
 }

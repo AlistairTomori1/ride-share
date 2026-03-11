@@ -46,9 +46,21 @@ export default class SimulationController
             if (curr.data.state == "PICKING UP")
             {
             if (curr.data.location[0] !== curr.data.assignedRider.location[0])
+            {
                 curr.data.location[0] += Math.sign(curr.data.assignedRider.location[0] - curr.data.location[0]) * speed;
+                if (curr.data.location[0] > curr.data.assignedRider.location[0])
+                    curr.data.rotation = (3 * Math.PI/2);
+                else
+                    curr.data.rotation = (Math.PI/2);
+            }
             else if (curr.data.location[1] !== curr.data.assignedRider.location[1])
+            {
                 curr.data.location[1] += Math.sign(curr.data.assignedRider.location[1] - curr.data.location[1]) * speed;
+                if (curr.data.location[1] > curr.data.assignedRider.location[1])
+                    curr.data.rotation = 0;
+                else
+                    curr.data.rotation = Math.PI;
+            }
             else
             {
                 curr.data.assignedRider.state = "PICKED UP";
@@ -59,13 +71,26 @@ export default class SimulationController
             if (curr.data.state == "DROPPING OFF")
             {
             if (curr.data.location[0] !== curr.data.assignedRider.dropOff[0])
+            {
                 curr.data.location[0] += Math.sign(curr.data.assignedRider.dropOff[0] - curr.data.location[0]) * speed;
+                if (curr.data.location[0] > curr.data.assignedRider.dropOff[0])
+                    curr.data.rotation = (3 * Math.PI/2);
+                else
+                    curr.data.rotation = Math.PI/2;
+            }
             else if (curr.data.location[1] !== curr.data.assignedRider.dropOff[1])
+            {
                 curr.data.location[1] += Math.sign(curr.data.assignedRider.dropOff[1] - curr.data.location[1]) * speed;
+                if (curr.data.location[1] > curr.data.assignedRider.dropOff[1])
+                    curr.data.rotation = 0;
+                else
+                    curr.data.rotation = Math.PI;
+            }
             else
             {
                 curr.data.state = "AVAILABLE";
                 curr.data.assignedRider.state = "DROPPED OFF";
+                curr.data.rotation = 0;
             }
         }
             curr = curr.next;
