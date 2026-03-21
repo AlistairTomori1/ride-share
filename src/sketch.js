@@ -2,7 +2,7 @@ import SimulationController from "./core/SimulationController.js";
 import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
 import DispatchEngine from "./core/DispatchEngine.js";
-
+let pause = -1;
 let spawnInterval;
 let lastSpawnTime;
 const Simulation = new SimulationController();
@@ -46,7 +46,7 @@ function setup()
 
 function draw()
 {
-    Simulation.tick();
+    Simulation.runSim();
 
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -54,15 +54,17 @@ function draw()
     ctx.fillRect(1200, 0, 50, canvas.height);
     drawGrid(size);
     
-    if (Math.floor(Math.random() * 400) == 1)
+    if (Simulation.pause == 1)
     {
-        spawnRider(riderLength)
-        riderLength += 1;
+        if (Math.floor(Math.random() * (1/Simulation.simSpeed * 40000)) == 1)
+        {
+            spawnRider(riderLength)
+            riderLength += 1;
+        }
     }
-
+    drawRoute();
     drawDrivers();
     drawRiders();
-    drawRoute();
 
     displayStats();
 
@@ -208,7 +210,7 @@ function displayStats()
     curr = Simulation.riderList.head;
     while (curr !== null)
     {
-        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 150 + spacing);
+        ctx.fillText(curr.data.location + " " + curr.data.state + " " + Math.floor(curr.data.waitTimer / 60), 1280, 150 + spacing);
         if (curr.data.amenitiesRequired.length > 0)
         {
             spacing += 30;
@@ -265,6 +267,15 @@ function drawRoute()
         curr = curr.next;
     }
 }
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'p') {
+        Simulation.pause += pause;
+        pause *= -1;
+    }
+});
+
+
 
 window.onload = function()
 {

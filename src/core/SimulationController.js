@@ -12,6 +12,8 @@ export default class SimulationController
         this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList);
         console.log(this.driverList);
         this.time = 0;
+        this.simSpeed = 100;
+        this.pause = 1;
     }
 
     addDriver(driver)
@@ -34,13 +36,16 @@ export default class SimulationController
     
     runSim()
     {
-        this.tick();
+        if (this.pause == 1)
+            this.tick();
+        else
+            return;
     }
 
     moveDrivers()
     {
         let curr = this.driverList.head;
-        let speed = 2;
+        let speed = this.simSpeed/50;
         while (curr !== null)
         {
             if (curr.data.state == "PICKING UP")
