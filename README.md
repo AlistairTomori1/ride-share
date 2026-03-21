@@ -1,4 +1,3 @@
-add: if a driver ride ends and is closer to a waiting car, switch to the closer car
 # How to Run
 
 1. Open **Terminal** or **Command Prompt** with Git installed.
