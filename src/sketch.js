@@ -11,7 +11,6 @@ let riderLength = 0;
 let height = 800;
 let width = 1200;
 let size = 40;
-
 let amenities = ["Child seat", "Pet", "Wheelchair"];
 
 let carImg = new Image();
@@ -37,8 +36,6 @@ function setup()
             riderLength += 1;
         }
 
-    console.log(Simulation.driverList);
-    console.log(Simulation.riderList);
     draw();
 
     // TODO: optionally seed initial riders
@@ -89,7 +86,9 @@ function spawnRider(id)
     let dropOff = [0, 0];
     while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size)
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
-    console.log(dropOff);
+    let priority = false;
+    if (Math.random < 0.5)
+        priority = true;
     let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff);
 
     Simulation.addRider(request);

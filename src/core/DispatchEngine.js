@@ -1,13 +1,13 @@
 import Scoring from "../utils/Scoring.js";
 import LinkedList from "../data/LinkedList.js";
-import SimulationController from "./SimulationController.js";
+import EventLog from "../models/Event.js";
 export default class DispatchEngine
 {
     constructor(DriverList, RiderList)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
-        this.eventLog = new LinkedList();
+        this.eventLog = new EventLog();
         this.scoring = new Scoring();
     }
 
@@ -53,7 +53,7 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        console.log(rider.assignedDriver.id + ", " + driver.assignedRider.id)
+        this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
     }
     updateBusyDrivers()
     {
@@ -92,6 +92,7 @@ export default class DispatchEngine
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
+                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
                 }
             }
             curr = curr.next;

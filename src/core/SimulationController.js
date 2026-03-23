@@ -2,7 +2,6 @@ import DispatchEngine from "./DispatchEngine.js";
 import LinkedList from "../data/LinkedList.js";
 import Driver from "../models/Driver.js";
 import Rider from "../models/RideRequest.js";
-
 export default class SimulationController
 {
     constructor()
@@ -10,8 +9,8 @@ export default class SimulationController
         this.driverList = new LinkedList();
         this.riderList = new LinkedList();
         this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList);
-        console.log(this.driverList);
         this.time = 0;
+        //normal sim speed is 100
         this.simSpeed = 100;
         this.pause = 1;
     }
@@ -28,7 +27,6 @@ export default class SimulationController
     tick()
     {
         this.time++;
-        console.log("tick");
         this.dispatchEngine.update();
         this.moveDrivers();
         this.moveRiders();
@@ -70,6 +68,7 @@ export default class SimulationController
             {
                 curr.data.assignedRider.state = "PICKED UP";
                 curr.data.state = "DROPPING OFF";
+                this.dispatchEngine.eventLog.addEvent("Driver " + curr.data.id + " has picked up rider " + curr.data.assignedRider.id)
             }
             }
 
@@ -95,6 +94,7 @@ export default class SimulationController
             {
                 curr.data.state = "AVAILABLE";
                 curr.data.assignedRider.state = "DROPPED OFF";
+                this.dispatchEngine.eventLog.addEvent("Driver " + curr.data.id + " has dropped off rider " + curr.data.assignedRider.id)
                 curr.data.rotation = 0;
             }
         }
