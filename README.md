@@ -1,6 +1,6 @@
 # How to Run
 
-1. Open **Terminal** or **Command Prompt** with Git installed.
+1. Open **Terminal** or **Command Prompt** with Git and Python3 installed.
 
 2. Run:
 ```bash

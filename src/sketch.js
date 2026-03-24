@@ -35,7 +35,8 @@ function setup()
             spawnRider(i);
             riderLength += 1;
         }
-
+    console.log(Simulation.driverList);
+    console.log(Simulation.riderList);
     draw();
 
     // TODO: optionally seed initial riders
