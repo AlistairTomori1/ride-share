@@ -9,5 +9,6 @@ export default class Driver {
         this.assignedRider = null;
         this.busyTimer = 0;
         this.rotation = 0;
+        this.profits = 0;
 }
 }
