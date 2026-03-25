@@ -192,16 +192,16 @@ function displayStats()
     let spacing = 30;
     while (curr !== null)
     {
-        ctx.fillText(curr.data.location + " " + curr.data.state, 1280, 120 + spacing);
+        ctx.fillText(curr.data.location + " " + curr.data.state + " $" + curr.data.profits, 1260, 120 + spacing);
         if (curr.data.amenities.length > 0)
         {
             spacing += 30;
-            ctx.fillText(curr.data.capacity + " seats, has: " + curr.data.amenities, 1280, 120 + spacing);
+            ctx.fillText(curr.data.capacity + " seats, has: " + curr.data.amenities, 1260, 120 + spacing);
         }
         else 
         {
             spacing += 30;
-            ctx.fillText(curr.data.capacity + " seats", 1280, 120 + spacing);
+            ctx.fillText(curr.data.capacity + " seats", 1260, 120 + spacing);
         }
         curr = curr.next;
         spacing += 30;

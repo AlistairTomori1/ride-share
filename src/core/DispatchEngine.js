@@ -9,6 +9,7 @@ export default class DispatchEngine
         this.RiderList = RiderList;
         this.eventLog = new EventLog();
         this.scoring = new Scoring();
+        this.totalProfits = 0;
     }
 
     update()
@@ -53,6 +54,8 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
+        driver.profits += this.calculateProfit(rider);
+        this.totalProfits += this.calculateProfit(rider);
         this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
     }
     updateBusyDrivers()
@@ -97,6 +100,12 @@ export default class DispatchEngine
             }
             curr = curr.next;
         }
+    }
+
+    calculateProfit(rider)
+    {
+        
+        return(Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10));
     }
 
 }
