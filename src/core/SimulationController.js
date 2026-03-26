@@ -46,56 +46,56 @@ export default class SimulationController
         let speed = this.simSpeed/50;
         while (curr !== null)
         {
-            if (curr.data.state == "PICKING UP")
+            if (curr.state == "PICKING UP")
             {
-            if (curr.data.location[0] !== curr.data.assignedRider.location[0])
+            if (curr.location[0] !== curr.assignedRider.location[0])
             {
-                curr.data.location[0] += Math.sign(curr.data.assignedRider.location[0] - curr.data.location[0]) * speed;
-                if (curr.data.location[0] > curr.data.assignedRider.location[0])
-                    curr.data.rotation = (3 * Math.PI/2);
+                curr.location[0] += Math.sign(curr.assignedRider.location[0] - curr.location[0]) * speed;
+                if (curr.location[0] > curr.assignedRider.location[0])
+                    curr.rotation = (3 * Math.PI/2);
                 else
-                    curr.data.rotation = (Math.PI/2);
+                    curr.rotation = (Math.PI/2);
             }
-            else if (curr.data.location[1] !== curr.data.assignedRider.location[1])
+            else if (curr.location[1] !== curr.assignedRider.location[1])
             {
-                curr.data.location[1] += Math.sign(curr.data.assignedRider.location[1] - curr.data.location[1]) * speed;
-                if (curr.data.location[1] > curr.data.assignedRider.location[1])
-                    curr.data.rotation = 0;
+                curr.location[1] += Math.sign(curr.assignedRider.location[1] - curr.location[1]) * speed;
+                if (curr.location[1] > curr.assignedRider.location[1])
+                    curr.rotation = 0;
                 else
-                    curr.data.rotation = Math.PI;
+                    curr.rotation = Math.PI;
             }
             else
             {
-                curr.data.assignedRider.state = "PICKED UP";
-                curr.data.state = "DROPPING OFF";
-                this.dispatchEngine.eventLog.addEvent("Driver " + curr.data.id + " has picked up rider " + curr.data.assignedRider.id)
+                curr.assignedRider.state = "PICKED UP";
+                curr.state = "DROPPING OFF";
+                this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id)
             }
             }
 
-            if (curr.data.state == "DROPPING OFF")
+            if (curr.state == "DROPPING OFF")
             {
-            if (curr.data.location[0] !== curr.data.assignedRider.dropOff[0])
+            if (curr.location[0] !== curr.assignedRider.dropOff[0])
             {
-                curr.data.location[0] += Math.sign(curr.data.assignedRider.dropOff[0] - curr.data.location[0]) * speed;
-                if (curr.data.location[0] > curr.data.assignedRider.dropOff[0])
-                    curr.data.rotation = (3 * Math.PI/2);
+                curr.location[0] += Math.sign(curr.assignedRider.dropOff[0] - curr.location[0]) * speed;
+                if (curr.location[0] > curr.assignedRider.dropOff[0])
+                    curr.rotation = (3 * Math.PI/2);
                 else
-                    curr.data.rotation = Math.PI/2;
+                    curr.rotation = Math.PI/2;
             }
-            else if (curr.data.location[1] !== curr.data.assignedRider.dropOff[1])
+            else if (curr.location[1] !== curr.assignedRider.dropOff[1])
             {
-                curr.data.location[1] += Math.sign(curr.data.assignedRider.dropOff[1] - curr.data.location[1]) * speed;
-                if (curr.data.location[1] > curr.data.assignedRider.dropOff[1])
-                    curr.data.rotation = 0;
+                curr.location[1] += Math.sign(curr.assignedRider.dropOff[1] - curr.location[1]) * speed;
+                if (curr.location[1] > curr.assignedRider.dropOff[1])
+                    curr.rotation = 0;
                 else
-                    curr.data.rotation = Math.PI;
+                    curr.rotation = Math.PI;
             }
             else
             {
-                curr.data.state = "AVAILABLE";
-                curr.data.assignedRider.state = "DROPPED OFF";
-                this.dispatchEngine.eventLog.addEvent("Driver " + curr.data.id + " has dropped off rider " + curr.data.assignedRider.id)
-                curr.data.rotation = 0;
+                curr.state = "AVAILABLE";
+                curr.assignedRider.state = "DROPPED OFF";
+                this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + curr.assignedRider.id)
+                curr.rotation = 0;
             }
         }
             curr = curr.next;
@@ -108,11 +108,11 @@ export default class SimulationController
 
         while (curr !== null)
         {
-            if (curr.data.state == "PICKED UP")
-                curr.data.location = curr.data.assignedDriver.location;
+            if (curr.state == "PICKED UP")
+                curr.location = curr.assignedDriver.location;
 
-            if (curr.data.state == "DROPPED OFF")
-                this.riderList.remove(curr.data);
+            if (curr.state == "DROPPED OFF")
+                this.riderList.remove(curr);
 
             curr = curr.next;
         }

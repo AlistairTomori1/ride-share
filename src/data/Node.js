@@ -1,6 +1,8 @@
 export default class Node {
-    constructor(data) {
+    constructor(id, location, role) {
+        this.id = id;
+        this.location = location;
+        this.role = role;
         this.next = null;
-        this.data = data;
     }
 }

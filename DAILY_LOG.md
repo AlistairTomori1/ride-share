@@ -37,3 +37,6 @@ Alistair - made event log to capture events.
 
 March 24 2026:
 Alistair - worked on log.
+
+March 25 2026:
+Alistair - made daily log as well as added profits for each driver.
