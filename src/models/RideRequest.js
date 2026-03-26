@@ -1,13 +1,13 @@
+import Node from "../data/Node.js";
 const now = new Date();
 const hours = now.getHours();
 const minutes = now.getMinutes();
 const seconds = now.getSeconds();
-export default class RideRequest
+export default class RideRequest extends Node
 {
     constructor(id, location, passengers, amenitiesRequired = [], dropOff, priority)
     {
-        this.id = id;
-        this.location = location;
+        super(id, location, "RIDER")
         this.dropOff = dropOff;
         this.passengers = passengers;
         this.amenitiesRequired = amenitiesRequired;

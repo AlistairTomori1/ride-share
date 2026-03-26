@@ -24,7 +24,7 @@ export default class DispatchEngine
         let currRider = this.RiderList.head;
         while(currRider !== null)
         {
-            if (currRider.data.state === "WAITING")
+            if (currRider.state === "WAITING")
             {
             let currDriver = this.DriverList.head;
             let currScore;
@@ -32,16 +32,16 @@ export default class DispatchEngine
             let bestDriver = null;
             while(currDriver !== null)
             {
-                currScore = this.scoring.calculateScore(currDriver.data, currRider.data);
-                if (currScore < bestScore && currDriver.data.state == "AVAILABLE")
+                currScore = this.scoring.calculateScore(currDriver, currRider);
+                if (currScore < bestScore && currDriver.state == "AVAILABLE")
                 {
                     bestScore = currScore;
-                    bestDriver = currDriver.data;
+                    bestDriver = currDriver;
                 }
                 currDriver = currDriver.next;
             }
             if (bestDriver !== null)
-                this.assignDriver(currRider.data, bestDriver);
+                this.assignDriver(currRider, bestDriver);
         }
             currRider = currRider.next;
         }
@@ -64,7 +64,7 @@ export default class DispatchEngine
 
         while (curr !== null)
         {
-            let driver = curr.data;
+            let driver = curr;
 
             if (driver.state === "PICKING UP")
             {
@@ -86,7 +86,7 @@ export default class DispatchEngine
 
         while (curr !== null)
         {
-            let rider = curr.data;
+            let rider = curr;
 
             if (rider.state === "WAITING" && rider.assignedDriver === null)
             {

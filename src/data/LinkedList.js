@@ -5,24 +5,25 @@ export default class LinkedList {
         this.size = 1;
     }
   
-    addLink(data) {
-        let newNode = new Node(data);
+    addLink(node) {
+        node.next = null;
         if (this.head === null) {
-            this.head = newNode;
+            this.head = node;
         }
         else {
             let curr = this.head;
             while (curr.next !== null) {
                 curr = curr.next; 
             }
-            curr.next = newNode;
+            curr.next = node;
         }
+        this.size++
     }
 
-    remove(data) {
+    remove(node) {
         if (this.head === null)
             return;
-        if (this.head.data === data)
+        if (this.head === node)
         {
             this.head = this.head.next;
             return;
@@ -30,7 +31,7 @@ export default class LinkedList {
         let curr = this.head;
         while (curr.next !== null)
         {
-            if (curr.next.data === data)
+            if (curr.next === node)
             {
                 curr.next = curr.next.next;
                 return;
@@ -44,7 +45,7 @@ export default class LinkedList {
         let curr = this.head;
         while (curr !== null)
         {
-            if (predicate(curr.data))
+            if (predicate(curr))
             {
                 return curr;
             }
@@ -58,7 +59,7 @@ export default class LinkedList {
         let curr = this.head;
         while (curr !== null)
         {
-            callback(curr.data);
+            callback(curr);
             curr = curr.next;
         }
     }

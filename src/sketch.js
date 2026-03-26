@@ -123,15 +123,15 @@ function drawDrivers()
         while (curr !== null)
         {
             
-            if (curr.data.state == "AVAILABLE")
+            if (curr.state == "AVAILABLE")
             {
-                ctx.drawImage(carImg, curr.data.location[0]-20,  curr.data.location[1]-20, 40, 40);
+                ctx.drawImage(carImg, curr.location[0]-20,  curr.location[1]-20, 40, 40);
             }
             else
             {
                 ctx.save();
-                ctx.translate(curr.data.location[0], curr.data.location[1]);
-                ctx.rotate(curr.data.rotation);
+                ctx.translate(curr.location[0], curr.location[1]);
+                ctx.rotate(curr.rotation);
                 ctx.drawImage(carImgBusy, -20, -20, 40, 40);
                 ctx.restore();
             }
@@ -148,16 +148,16 @@ function drawRiders()
         while (curr !== null)
         {
             ctx.fillStyle = "#18cc00";
-            ctx.fillRect(curr.data.location[0]-10, curr.data.location[1]-10, 20, 20);
+            ctx.fillRect(curr.location[0]-10, curr.location[1]-10, 20, 20);
 
-            if (curr.data.state == "PICKED UP")
+            if (curr.state == "PICKED UP")
             {
                 ctx.beginPath();
-                ctx.arc(curr.data.dropOff[0], curr.data.dropOff[1], 10, 0, Math.PI * 2);
+                ctx.arc(curr.dropOff[0], curr.dropOff[1], 10, 0, Math.PI * 2);
                 ctx.fill();
             }
-            else if (curr.data.state == "EXPIRED")
-                Simulation.riderList.remove(curr.data);
+            else if (curr.state == "EXPIRED")
+                Simulation.riderList.remove(curr);
             curr = curr.next;
         }
 }
@@ -192,16 +192,16 @@ function displayStats()
     let spacing = 30;
     while (curr !== null)
     {
-        ctx.fillText(curr.data.location + " " + curr.data.state + " $" + curr.data.profits, 1260, 120 + spacing);
-        if (curr.data.amenities.length > 0)
+        ctx.fillText(curr.location + " " + curr.state + " $" + curr.profits, 1260, 120 + spacing);
+        if (curr.amenities.length > 0)
         {
             spacing += 30;
-            ctx.fillText(curr.data.capacity + " seats, has: " + curr.data.amenities, 1260, 120 + spacing);
+            ctx.fillText(curr.capacity + " seats, has: " + curr.amenities, 1260, 120 + spacing);
         }
         else 
         {
             spacing += 30;
-            ctx.fillText(curr.data.capacity + " seats", 1260, 120 + spacing);
+            ctx.fillText(curr.capacity + " seats", 1260, 120 + spacing);
         }
         curr = curr.next;
         spacing += 30;
@@ -210,16 +210,16 @@ function displayStats()
     curr = Simulation.riderList.head;
     while (curr !== null)
     {
-        ctx.fillText(curr.data.location + " " + curr.data.state + " " + Math.floor(curr.data.waitTimer / 60), 1280, 150 + spacing);
-        if (curr.data.amenitiesRequired.length > 0)
+        ctx.fillText(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60), 1280, 150 + spacing);
+        if (curr.amenitiesRequired.length > 0)
         {
             spacing += 30;
-            ctx.fillText(curr.data.passengers + " people, " + curr.data.amenitiesRequired + " needed", 1280, 150 + spacing);
+            ctx.fillText(curr.passengers + " people, " + curr.amenitiesRequired + " needed", 1280, 150 + spacing);
         }
         else
         {
             spacing += 30;
-            ctx.fillText(curr.data.passengers + " people, ", 1280, 150 + spacing);
+            ctx.fillText(curr.passengers + " people, ", 1280, 150 + spacing);
 
         }
         curr = curr.next;
@@ -235,33 +235,33 @@ function drawRoute()
 
     while (curr !== null)
     {
-        if (curr.data.state == "PICKING UP")
+        if (curr.state == "PICKING UP")
         {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(curr.data.location[0], curr.data.location[1]);
-        ctx.lineTo(curr.data.assignedRider.location[0], curr.data.location[1]);
+        ctx.moveTo(curr.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.location[0], curr.location[1]);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(curr.data.assignedRider.location[0], curr.data.location[1]);
-        ctx.lineTo(curr.data.assignedRider.location[0], curr.data.assignedRider.location[1]);
+        ctx.moveTo(curr.assignedRider.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.location[0], curr.assignedRider.location[1]);
         ctx.stroke();
         }
 
-        if (curr.data.state == "DROPPING OFF")
+        if (curr.state == "DROPPING OFF")
         {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(curr.data.location[0], curr.data.location[1]);
-        ctx.lineTo(curr.data.assignedRider.dropOff[0], curr.data.location[1]);
+        ctx.moveTo(curr.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.dropOff[0], curr.location[1]);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(curr.data.assignedRider.dropOff[0], curr.data.location[1]);
-        ctx.lineTo(curr.data.assignedRider.dropOff[0], curr.data.assignedRider.dropOff[1]);
+        ctx.moveTo(curr.assignedRider.dropOff[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.dropOff[0], curr.assignedRider.dropOff[1]);
         ctx.stroke();
         }
         curr = curr.next;
