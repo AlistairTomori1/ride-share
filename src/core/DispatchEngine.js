@@ -71,6 +71,31 @@ export default class DispatchEngine
         }
         if (bestDriver !== null)
             this.assignDriver(rider, bestDriver);
+        return;
+    }
+
+        matchRiderToSingle(driver)
+    {
+        let currRider = this.RiderList.head;
+        let currScore;
+        let bestScore = Infinity;
+        let bestRider = null;
+        while (currRider !== null)
+        {
+            if (currRider.state == "WAITING")
+            {
+                currScore = this.scoring.calculateScore(driver, currRider);
+                if (currScore < bestScore)
+                {
+                    bestScore = currScore;
+                    bestRider = currRider;
+                }
+            }
+            currRider = currRider.next;
+        }
+        if (bestRider !== null)
+            this.assignDriver(bestRider, driver);
+        return;
     }
 
     assignDriver(rider, driver)

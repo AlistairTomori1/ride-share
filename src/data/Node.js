@@ -4,5 +4,6 @@ export default class Node {
         this.location = location;
         this.role = role;
         this.next = null;
+        this.prev = null;
     }
 }
