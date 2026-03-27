@@ -22,6 +22,7 @@ export default class SimulationController
     addRider(rider)
     {
         this.riderList.addLink(rider);
+        this.dispatchEngine.matchDriverToSingle(rider);
     }
     
     tick()
@@ -92,10 +93,17 @@ export default class SimulationController
             }
             else
             {
+                let droppedRider = curr.assignedRider;
+                if (droppedRider !== null)
+                {
+                    droppedRider.state = "DROPPED OFF";
+                    droppedRider.assignedDriver = null;
+                    this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
+                }
+                curr.assignedRider = null;
                 curr.state = "AVAILABLE";
-                curr.assignedRider.state = "DROPPED OFF";
-                this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + curr.assignedRider.id)
                 curr.rotation = 0;
+                this.dispatchEngine.matchRiderToSingle(curr);
             }
         }
             curr = curr.next;

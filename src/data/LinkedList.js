@@ -2,42 +2,39 @@ import Node from "./Node.js";
 export default class LinkedList {
     constructor() {
         this.head = null;
-        this.size = 1;
+        this.tail = null;
+        this.size = 0;
     }
   
     addLink(node) {
         node.next = null;
+        node.prev = null;
         if (this.head === null) {
             this.head = node;
+            this.tail = node;
         }
         else {
-            let curr = this.head;
-            while (curr.next !== null) {
-                curr = curr.next; 
-            }
+            let curr = this.tail;
             curr.next = node;
+            node.prev = this.tail;
+            this.tail = node;
         }
         this.size++
     }
 
     remove(node) {
-        if (this.head === null)
-            return;
-        if (this.head === node)
-        {
-            this.head = this.head.next;
-            return;
-        }
-        let curr = this.head;
-        while (curr.next !== null)
-        {
-            if (curr.next === node)
-            {
-                curr.next = curr.next.next;
-                return;
-            }
-            curr = curr.next;
-        }
+        if (node.prev != null)
+            node.prev.next = node.next;
+        else
+            this.head = node.next;
+        if (node.next != null)
+            node.next.prev = node.prev;
+        else
+            this.tail = node.prev;
+
+        this.size--;
+        node.next = null;
+        node.prev = null;
     }
 
     search(predicate)

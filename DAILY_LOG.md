@@ -40,3 +40,6 @@ Alistair - worked on log.
 
 March 25 2026:
 Alistair - made daily log as well as added profits for each driver.
+
+March 26 2026:
+Alistair - Changed classes to be using Inheritance, with node as the parent class.
