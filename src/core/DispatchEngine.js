@@ -16,7 +16,7 @@ export default class DispatchEngine
     {
         this.updateWaitingRiders();
         //this.updateBusyDrivers();
-        this.matchDriversToRides();
+        //this.matchDriversToRides();
     }
 
     matchDriversToRides()
@@ -32,12 +32,15 @@ export default class DispatchEngine
             let bestDriver = null;
             while(currDriver !== null)
             {
+                if (currDriver.state == "AVAILABLE")
+                {
                 currScore = this.scoring.calculateScore(currDriver, currRider);
-                if (currScore < bestScore && currDriver.state == "AVAILABLE")
+                if (currScore < bestScore)
                 {
                     bestScore = currScore;
                     bestDriver = currDriver;
                 }
+            }
                 currDriver = currDriver.next;
             }
             if (bestDriver !== null)
@@ -45,6 +48,29 @@ export default class DispatchEngine
         }
             currRider = currRider.next;
         }
+    }
+
+    matchDriverToSingle(rider)
+    {
+        let currDriver = this.DriverList.head;
+        let currScore;
+        let bestScore = Infinity;
+        let bestDriver = null;
+        while (currDriver !== null)
+        {
+            if (currDriver.state == "AVAILABLE")
+            {
+                currScore = this.scoring.calculateScore(currDriver, rider);
+                if (currScore < bestScore)
+                {
+                    bestScore = currScore;
+                    bestDriver = currDriver;
+                }
+            }
+            currDriver = currDriver.next;
+        }
+        if (bestDriver !== null)
+            this.assignDriver(rider, bestDriver);
     }
 
     assignDriver(rider, driver)

@@ -22,6 +22,7 @@ export default class SimulationController
     addRider(rider)
     {
         this.riderList.addLink(rider);
+        this.dispatchEngine.matchDriverToSingle(rider);
     }
     
     tick()
@@ -93,6 +94,7 @@ export default class SimulationController
             else
             {
                 curr.state = "AVAILABLE";
+                this.dispatchEngine.matchDriversToRides();
                 curr.assignedRider.state = "DROPPED OFF";
                 this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + curr.assignedRider.id)
                 curr.rotation = 0;
