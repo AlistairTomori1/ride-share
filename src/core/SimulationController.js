@@ -41,6 +41,19 @@ export default class SimulationController
             return;
     }
 
+    moveValueTowards(current, target, step)
+    {
+        const delta = target - current;
+        if (Math.abs(delta) <= step)
+            return target;
+        return current + Math.sign(delta) * step;
+    }
+
+    isAtTarget(current, target)
+    {
+        return Math.abs(current - target) < 0.0001;
+    }
+
     moveDrivers()
     {
         let curr = this.driverList.head;
@@ -49,66 +62,76 @@ export default class SimulationController
         {
             if (curr.state == "PICKING UP")
             {
-            if (curr.location[0] !== curr.assignedRider.location[0])
-            {
-                curr.location[0] += Math.sign(curr.assignedRider.location[0] - curr.location[0]) * speed;
-                if (curr.location[0] > curr.assignedRider.location[0])
-                    curr.rotation = (3 * Math.PI/2);
+                const pickupX = curr.assignedRider.location[0];
+                const pickupY = curr.assignedRider.location[1];
+                const xDelta = pickupX - curr.location[0];
+                const yDelta = pickupY - curr.location[1];
+
+                if (!this.isAtTarget(curr.location[0], pickupX))
+                {
+                    curr.location[0] = this.moveValueTowards(curr.location[0], pickupX, speed);
+                    if (xDelta < 0)
+                        curr.rotation = (3 * Math.PI/2);
+                    else
+                        curr.rotation = (Math.PI/2);
+                }
+                else if (!this.isAtTarget(curr.location[1], pickupY))
+                {
+                    curr.location[1] = this.moveValueTowards(curr.location[1], pickupY, speed);
+                    if (yDelta < 0)
+                        curr.rotation = 0;
+                    else
+                        curr.rotation = Math.PI;
+                }
                 else
-                    curr.rotation = (Math.PI/2);
-            }
-            else if (curr.location[1] !== curr.assignedRider.location[1])
-            {
-                curr.location[1] += Math.sign(curr.assignedRider.location[1] - curr.location[1]) * speed;
-                if (curr.location[1] > curr.assignedRider.location[1])
-                    curr.rotation = 0;
-                else
-                    curr.rotation = Math.PI;
-            }
-            else
-            {
-                curr.assignedRider.state = "PICKED UP";
-                curr.state = "DROPPING OFF";
-                this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id)
-            }
+                {
+                    curr.assignedRider.state = "PICKED UP";
+                    curr.state = "DROPPING OFF";
+                    this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id)
+                }
             }
 
             if (curr.state == "DROPPING OFF")
             {
-            if (curr.location[0] !== curr.assignedRider.dropOff[0])
-            {
-                curr.location[0] += Math.sign(curr.assignedRider.dropOff[0] - curr.location[0]) * speed;
-                if (curr.location[0] > curr.assignedRider.dropOff[0])
-                    curr.rotation = (3 * Math.PI/2);
-                else
-                    curr.rotation = Math.PI/2;
-            }
-            else if (curr.location[1] !== curr.assignedRider.dropOff[1])
-            {
-                curr.location[1] += Math.sign(curr.assignedRider.dropOff[1] - curr.location[1]) * speed;
-                if (curr.location[1] > curr.assignedRider.dropOff[1])
-                    curr.rotation = 0;
-                else
-                    curr.rotation = Math.PI;
-            }
-            else
-            {
-                let droppedRider = curr.assignedRider;
-                if (droppedRider !== null)
+                const dropOffX = curr.assignedRider.dropOff[0];
+                const dropOffY = curr.assignedRider.dropOff[1];
+                const xDelta = dropOffX - curr.location[0];
+                const yDelta = dropOffY - curr.location[1];
+
+                if (!this.isAtTarget(curr.location[0], dropOffX))
                 {
-                    droppedRider.state = "DROPPED OFF";
-                    droppedRider.assignedDriver = null;
-                    this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
+                    curr.location[0] = this.moveValueTowards(curr.location[0], dropOffX, speed);
+                    if (xDelta < 0)
+                        curr.rotation = (3 * Math.PI/2);
+                    else
+                        curr.rotation = Math.PI/2;
                 }
-                curr.assignedRider = null;
-                curr.state = "AVAILABLE";
-                curr.rotation = 0;
-                this.dispatchEngine.matchRiderToSingle(curr);
+                else if (!this.isAtTarget(curr.location[1], dropOffY))
+                {
+                    curr.location[1] = this.moveValueTowards(curr.location[1], dropOffY, speed);
+                    if (yDelta < 0)
+                        curr.rotation = 0;
+                    else
+                        curr.rotation = Math.PI;
+                }
+                else
+                {
+                    let droppedRider = curr.assignedRider;
+                    if (droppedRider !== null)
+                    {
+                        droppedRider.state = "DROPPED OFF";
+                        droppedRider.assignedDriver = null;
+                        this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
+                    }
+                    curr.assignedRider = null;
+                    curr.state = "AVAILABLE";
+                    curr.rotation = 0;
+                    this.dispatchEngine.matchRiderToSingle(curr);
+                }
             }
-        }
             curr = curr.next;
+        }
     }
-}
 
     moveRiders()
     {

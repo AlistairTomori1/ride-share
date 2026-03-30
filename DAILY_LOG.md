@@ -43,3 +43,6 @@ Alistair - made daily log as well as added profits for each driver.
 
 March 26 2026:
 Alistair - Changed classes to be using Inheritance, with node as the parent class.
+
+March 27 2026:
+Alistair - re-wrote LinkedList for improved efficiency, removed scaning through whole list of rider/driver. only run matching when a new rider is added, or a driver finishes dropping off.
