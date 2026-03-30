@@ -2,7 +2,6 @@ import SimulationController from "./core/SimulationController.js";
 import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
 import DispatchEngine from "./core/DispatchEngine.js";
-let pause = -1;
 let spawnInterval;
 let lastSpawnTime;
 const Simulation = new SimulationController();
@@ -12,6 +11,31 @@ let height = 800;
 let width = 1200;
 let size = 40;
 let amenities = ["Child seat", "Pet", "Wheelchair"];
+const dividerX = 1200;
+const dividerWidth = 12;
+const statsPanelX = dividerX + dividerWidth;
+const statsPadding = 10;
+const statsTabY = 12;
+const statsTabHeight = 28;
+const statsTabGap = 6;
+const listTabWidth = 165;
+const eventsTabWidth = 70;
+const statsHeaderY = 80;
+const pauseButtonY = statsHeaderY + 8;
+const pauseButtonHeight = 20;
+const pauseButtonWidth = 90;
+const speedButtonGap = 4;
+const speedButtonWidth = 34;
+const speedButtonHeight = 20;
+const speedMultipliers = [0.5, 1, 2, 10];
+const statsViewportTop = 110;
+const statsViewportBottomPadding = 20;
+const statsLineHeight = 24;
+let activeStatsTab = "list";
+let statsScrollByTab = { list: 0, events: 0 };
+let statsContentHeight = 0;
+const baseSimulationSpeed = Simulation.simSpeed;
+let activeSpeedMultiplier = 1;
 
 let carImg = new Image();
 let carImgBusy = new Image();
@@ -24,6 +48,8 @@ function setup()
     ctx = canvas.getContext("2d");
     canvas.width = width + 275;
     canvas.height = height;
+    canvas.addEventListener("wheel", onStatsWheel, { passive: false });
+    canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
     for (let i = 0; i < 5; i++)
     {
@@ -49,7 +75,7 @@ function draw()
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(1200, 0, 50, canvas.height);
+    ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
     drawGrid(size);
     
     if (Simulation.pause == 1)
@@ -184,49 +210,231 @@ function drawGrid(size)
 
 function displayStats()
 {
-    ctx.fillStyle = '#ffffff';
-    ctx.font = "16px serif";
-    ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", 1280, 80);
+    const normalFont = "16px serif";
+    const sectionFont = "bold 20px serif";
+    const tabFont = "13px serif";
+    const tabX = statsPanelX + statsPadding;
+    const listTabX = tabX;
+    const eventsTabX = listTabX + listTabWidth + statsTabGap;
 
-    let curr = Simulation.driverList.head;
-    let spacing = 30;
-    while (curr !== null)
+    ctx.font = tabFont;
+    if (activeStatsTab === "list")
     {
-        ctx.fillText(curr.location + " " + curr.state + " $" + curr.profits, 1260, 120 + spacing);
-        if (curr.amenities.length > 0)
-        {
-            spacing += 30;
-            ctx.fillText(curr.capacity + " seats, has: " + curr.amenities, 1260, 120 + spacing);
-        }
-        else 
-        {
-            spacing += 30;
-            ctx.fillText(curr.capacity + " seats", 1260, 120 + spacing);
-        }
-        curr = curr.next;
-        spacing += 30;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
+        ctx.fillStyle = "#1e1e1e";
+        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
+
+        ctx.fillStyle = "#4f4f4f";
+        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
+    }
+    else
+    {
+        ctx.fillStyle = "#4f4f4f";
+        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
+        ctx.fillStyle = "#1e1e1e";
+        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
     }
 
-    curr = Simulation.riderList.head;
-    while (curr !== null)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = normalFont;
+    ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
+    drawPauseButton();
+    drawSpeedButtons();
+
+    const lines = [];
+    let curr;
+    if (activeStatsTab === "list")
     {
-        ctx.fillText(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60), 1280, 150 + spacing);
-        if (curr.amenitiesRequired.length > 0)
+        curr = Simulation.driverList.head;
+        lines.push("Drivers");
+        while (curr !== null)
         {
-            spacing += 30;
-            ctx.fillText(curr.passengers + " people, " + curr.amenitiesRequired + " needed", 1280, 150 + spacing);
+            lines.push(curr.location + " " + curr.state + " $" + curr.profits);
+            if (curr.amenities.length > 0)
+                lines.push(curr.capacity + " seats, has: " + curr.amenities);
+            else
+                lines.push(curr.capacity + " seats");
+            curr = curr.next;
         }
+
+        lines.push("");
+        lines.push("Riders");
+        curr = Simulation.riderList.head;
+        while (curr !== null)
+        {
+            lines.push(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+            if (curr.amenitiesRequired.length > 0)
+                lines.push(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+            else
+                lines.push(curr.passengers + " people");
+            curr = curr.next;
+        }
+    }
+    else
+    {
+        const eventLines = Simulation.dispatchEngine.eventLog.log;
+        if (eventLines.length === 0)
+            lines.push("No events yet");
         else
         {
-            spacing += 30;
-            ctx.fillText(curr.passengers + " people, ", 1280, 150 + spacing);
-
+            for (let i = eventLines.length - 1; i >= 0; i--)
+            {
+                lines.push(eventLines[i]);
+            }
         }
-        curr = curr.next;
-        spacing += 30;
+    }
+
+    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
+    statsContentHeight = lines.length * statsLineHeight;
+    const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
+    statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
+    const activeScrollY = statsScrollByTab[activeStatsTab];
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(statsPanelX, statsViewportTop, canvas.width - statsPanelX, statsViewportHeight);
+    ctx.clip();
+
+    let y = statsViewportTop + statsLineHeight - activeScrollY;
+    for (let i = 0; i < lines.length; i++)
+    {
+        if (activeStatsTab === "list" && (lines[i] === "Drivers" || lines[i] === "Riders"))
+            ctx.font = sectionFont;
+        else
+            ctx.font = normalFont;
+        ctx.fillText(lines[i], statsPanelX + statsPadding, y);
+        y += statsLineHeight;
+    }
+    ctx.restore();
+
+    if (maxScroll > 0)
+    {
+        const trackX = canvas.width - 10;
+        const trackY = statsViewportTop;
+        const trackHeight = statsViewportHeight;
+        const thumbHeight = Math.max(30, (statsViewportHeight / statsContentHeight) * trackHeight);
+        const thumbY = trackY + (activeScrollY / maxScroll) * (trackHeight - thumbHeight);
+
+        ctx.fillStyle = "#4f4f4f";
+        ctx.fillRect(trackX, trackY, 4, trackHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(trackX, thumbY, 4, thumbHeight);
     }
 
     // TODO: display completed/expired counts
+}
+
+function onStatsWheel(event)
+{
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
+    const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
+
+    if (mouseX < statsPanelX || mouseY < statsViewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
+        return;
+
+    statsScrollByTab[activeStatsTab] += Math.sign(event.deltaY) * statsLineHeight;
+    statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
+    event.preventDefault();
+}
+
+function onStatsTabClick(event)
+{
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    const tabX = statsPanelX + statsPadding;
+    const listTabX = tabX;
+    const eventsTabX = listTabX + listTabWidth + statsTabGap;
+
+    if (mouseY < statsTabY || mouseY > statsTabY + statsTabHeight)
+        return;
+
+    if (mouseX >= listTabX && mouseX <= listTabX + listTabWidth)
+    {
+        activeStatsTab = "list";
+        return;
+    }
+
+    if (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth)
+        activeStatsTab = "events";
+}
+
+function drawPauseButton()
+{
+    const buttonX = statsPanelX + statsPadding;
+    const label = Simulation.pause === 1 ? "Pause" : "Resume";
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(buttonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "14px serif";
+    ctx.fillText(label, buttonX + 24, pauseButtonY + 14);
+}
+
+function drawSpeedButtons()
+{
+    const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
+    const labels = ["0.5X", "1X", "2X", "10X"];
+    ctx.font = "12px serif";
+
+    for (let i = 0; i < labels.length; i++)
+    {
+        const buttonX = startX + i * (speedButtonWidth + speedButtonGap);
+        if (speedMultipliers[i] === activeSpeedMultiplier)
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+        ctx.fillText(labels[i], buttonX + 6, pauseButtonY + 14);
+    }
+}
+
+function onStatsPanelMouseDown(event)
+{
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    const buttonX = statsPanelX + statsPadding;
+    const speedStartX = buttonX + pauseButtonWidth + 6;
+
+    if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
+    {
+        Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+        return;
+    }
+
+    if (mouseY >= pauseButtonY && mouseY <= pauseButtonY + speedButtonHeight)
+    {
+        for (let i = 0; i < speedMultipliers.length; i++)
+        {
+            const speedX = speedStartX + i * (speedButtonWidth + speedButtonGap);
+            if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+            {
+                activeSpeedMultiplier = speedMultipliers[i];
+                Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+                return;
+            }
+        }
+    }
+
+    onStatsTabClick(event);
 }
 
 function drawRoute()
@@ -267,15 +475,6 @@ function drawRoute()
         curr = curr.next;
     }
 }
-
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'p') {
-        Simulation.pause += pause;
-        pause *= -1;
-    }
-});
-
-
 
 window.onload = function()
 {
