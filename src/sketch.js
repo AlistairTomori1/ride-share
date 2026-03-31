@@ -21,6 +21,9 @@ const statsTabGap = 6;
 const listTabWidth = 165;
 const eventsTabWidth = 70;
 const statsHeaderY = 80;
+const surgeButtonY = statsHeaderY - 14;
+const surgeButtonWidth = 74;
+const surgeButtonHeight = 20;
 const pauseButtonY = statsHeaderY + 8;
 const pauseButtonHeight = 20;
 const pauseButtonWidth = 90;
@@ -36,7 +39,7 @@ let statsScrollByTab = { list: 0, events: 0 };
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
-
+let spawnBudget = 0;
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
@@ -51,7 +54,7 @@ function setup()
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
-    for (let i = 0; i < 5; i++)
+    for (let i = 0; i < 10; i++)
     {
         spawnDriver(i);
     }
@@ -64,8 +67,6 @@ function setup()
     console.log(Simulation.driverList);
     console.log(Simulation.riderList);
     draw();
-
-    // TODO: optionally seed initial riders
 }
 
 function draw()
@@ -80,11 +81,7 @@ function draw()
     
     if (Simulation.pause == 1)
     {
-        if (Math.floor(Math.random() * (1/Simulation.simSpeed * 40000)) == 1)
-        {
-            spawnRider(riderLength)
-            riderLength += 1;
-        }
+        spawnController();
     }
     drawRoute();
     drawDrivers();
@@ -93,6 +90,48 @@ function draw()
     displayStats();
 
     requestAnimationFrame(draw);
+}
+
+function spawnController()
+{
+    let d = 0;
+    let curr = Simulation.driverList.head;
+    while (curr !== null)
+    {
+        if (curr.state === "AVAILABLE")
+            d++;
+        curr = curr.next;
+    }
+    let r = 0;
+    let currRider = Simulation.riderList.head;
+    while (currRider !== null)
+    {
+        if (currRider.state === "WAITING")
+            r++;
+        currRider = currRider.next;
+    }
+    let busyDrivers = Simulation.riderList.size - d;
+    
+    let ratio = busyDrivers / Simulation.driverList.size;
+    let waitPerDriver = r / Simulation.driverList.size;
+    let helper = Simulation.driverList.size * 0.2;
+    helper += (0.85 - ratio) * Simulation.driverList.size * 0.4;
+    helper += (0.3 - waitPerDriver) * Simulation.driverList.size * 0.6;
+
+    helper = Math.max(0, Math.min(helper, Simulation.driverList.size * 0.8));
+
+    let speedMult = Simulation.simSpeed / Simulation.baseSimSpeed;
+
+    spawnBudget += (helper * speedMult) / 60;
+
+    while (spawnBudget >= 1)
+    {
+        spawnRider(riderLength);
+        riderLength += 1;
+        spawnBudget -= 1;
+    }
+    
+
 }
 
 function spawnRider(id)
@@ -113,9 +152,6 @@ function spawnRider(id)
     let dropOff = [0, 0];
     while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]))
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
-    let priority = false;
-    if (Math.random < 0.5)
-        priority = true;
     let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff);
 
     Simulation.addRider(request);
@@ -207,7 +243,7 @@ function drawGrid(size)
         ctx.stroke();
     }
 }
-
+//AI IMPLEMENTED
 function displayStats()
 {
     const normalFont = "16px serif";
@@ -246,6 +282,7 @@ function displayStats()
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
     ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
+    drawSurgeButton();
     drawPauseButton();
     drawSpeedButtons();
 
@@ -302,6 +339,7 @@ function displayStats()
     ctx.beginPath();
     ctx.rect(statsPanelX, statsViewportTop, canvas.width - statsPanelX, statsViewportHeight);
     ctx.clip();
+    ctx.fillStyle = "#ffffff";
 
     let y = statsViewportTop + statsLineHeight - activeScrollY;
     for (let i = 0; i < lines.length; i++)
@@ -329,7 +367,6 @@ function displayStats()
         ctx.fillRect(trackX, thumbY, 4, thumbHeight);
     }
 
-    // TODO: display completed/expired counts
 }
 
 function onStatsWheel(event)
@@ -381,6 +418,16 @@ function drawPauseButton()
     ctx.fillText(label, buttonX + 24, pauseButtonY + 14);
 }
 
+function drawSurgeButton()
+{
+    const buttonX = statsPanelX + 150;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(buttonX, surgeButtonY, surgeButtonWidth, surgeButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "13px serif";
+    ctx.fillText("Surge +10", buttonX + 8, surgeButtonY + 14);
+}
+
 function drawSpeedButtons()
 {
     const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
@@ -412,7 +459,18 @@ function onStatsPanelMouseDown(event)
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
     const buttonX = statsPanelX + statsPadding;
+    const surgeButtonX = statsPanelX + 150;
     const speedStartX = buttonX + pauseButtonWidth + 6;
+
+    if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
+    {
+        for (let i = 0; i < 10; i++)
+        {
+            spawnRider(riderLength);
+            riderLength += 1;
+        }
+        return;
+    }
 
     if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
     {
@@ -436,7 +494,7 @@ function onStatsPanelMouseDown(event)
 
     onStatsTabClick(event);
 }
-
+//AI IMPLEMENTATION DONE ^
 function drawRoute()
 {
     let curr = Simulation.driverList.head;

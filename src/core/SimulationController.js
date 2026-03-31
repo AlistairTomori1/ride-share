@@ -12,6 +12,7 @@ export default class SimulationController
         this.time = 0;
         //normal sim speed is 100
         this.simSpeed = 100;
+        this.baseSimSpeed = this.simSpeed;
         this.pause = 1;
     }
 
@@ -24,13 +25,14 @@ export default class SimulationController
         this.riderList.addLink(rider);
         this.dispatchEngine.matchDriverToSingle(rider);
     }
-    
     tick()
     {
         this.time++;
-        this.dispatchEngine.update();
+        const speedMultiplier = this.simSpeed / this.baseSimSpeed;
+        this.dispatchEngine.update(speedMultiplier);
         this.moveDrivers();
         this.moveRiders();
+        this.updateSurge();
     }
     
     runSim()
@@ -40,7 +42,7 @@ export default class SimulationController
         else
             return;
     }
-
+    //AI implemented 
     moveValueTowards(current, target, step)
     {
         const delta = target - current;
@@ -53,7 +55,7 @@ export default class SimulationController
     {
         return Math.abs(current - target) < 0.0001;
     }
-
+    //AI implementaion end ^
     moveDrivers()
     {
         let curr = this.driverList.head;
@@ -146,6 +148,19 @@ export default class SimulationController
                 this.riderList.remove(curr);
 
             curr = curr.next;
+        }
+    }
+
+    updateSurge()
+    {
+        let ratio = this.riderList.size / Math.max(1, this.driverList.size);
+        let raw = 1 + 0.25 * (ratio - 1);
+        let nextSurge = Math.max(1, Math.min(3, Math.round(raw * 4) / 4));
+
+        if (nextSurge !== this.dispatchEngine.surgeMultiplier)
+        {
+            this.dispatchEngine.surgeMultiplier = nextSurge;
+            this.dispatchEngine.eventLog.addEvent("Surge updated to " + this.dispatchEngine.surgeMultiplier.toFixed(2) + "x");
         }
     }
 }
