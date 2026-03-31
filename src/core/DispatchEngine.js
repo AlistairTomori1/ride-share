@@ -10,11 +10,12 @@ export default class DispatchEngine
         this.eventLog = new EventLog();
         this.scoring = new Scoring();
         this.totalProfits = 0;
+        this.surgeMultiplier = 1;
     }
 
-    update()
+    update(speedMultiplier = 1)
     {
-        this.updateWaitingRiders();
+        this.updateWaitingRiders(speedMultiplier);
         //this.updateBusyDrivers();
         //this.matchDriversToRides();
     }
@@ -105,9 +106,10 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        driver.profits += this.calculateProfit(rider);
-        this.totalProfits += this.calculateProfit(rider);
         this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
+        let tripProfit = this.calculateProfit(rider);
+        driver.profits += tripProfit;
+        this.totalProfits += tripProfit;
     }
     updateBusyDrivers()
     {
@@ -131,7 +133,7 @@ export default class DispatchEngine
         }
     }
 
-    updateWaitingRiders()
+    updateWaitingRiders(speedMultiplier = 1)
     {
         let curr = this.RiderList.head;
 
@@ -141,7 +143,7 @@ export default class DispatchEngine
 
             if (rider.state === "WAITING" && rider.assignedDriver === null)
             {
-                rider.waitTimer--;
+                rider.waitTimer -= speedMultiplier;
 
                 if (rider.waitTimer <= 0)
                 {
@@ -155,8 +157,9 @@ export default class DispatchEngine
 
     calculateProfit(rider)
     {
-        
-        return(Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10));
+        let baseProfit = Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10);
+        console.log(this.surgeMultiplier);
+        return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 
 }

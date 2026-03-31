@@ -1,2 +1,4 @@
-1. AI made some fixes to the UI so youre able to scroll throgh the list of drivers and riders.
-2. AI made buttons for pausing and changing speed, however, we implemented the actual function of them.
+1. AI gave us a file structure to start with.
+2. AI made some fixes to the UI so youre able to scroll throgh the list of drivers and riders.
+3. AI made buttons for pausing and changing speed, however, we implemented the actual function of them.
+4. AI helped with a bug in simulation controller where sometimes the driver would just jitter overtop of a pickup location.

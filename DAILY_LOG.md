@@ -46,3 +46,9 @@ Alistair - Changed classes to be using Inheritance, with node as the parent clas
 
 March 27 2026:
 Alistair - re-wrote LinkedList for improved efficiency, removed scaning through whole list of rider/driver. only run matching when a new rider is added, or a driver finishes dropping off.
+
+March 30 2026:
+Alistair - Added surge logic so drivers get paid more during a surge. With the help of AI, added some buttons where I could implement pausing and changing speed when pressed.
+
+March 31 2026:
+Alistair - Finished up surge logic. Worked on rider spawn logic to make it more based on the driver count and more logical instead of just spawning a rider every X amount of ticks.
