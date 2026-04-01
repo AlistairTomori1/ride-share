@@ -52,3 +52,6 @@ Alistair - Added surge logic so drivers get paid more during a surge. With the h
 
 March 31 2026:
 Alistair - Finished up surge logic. Worked on rider spawn logic to make it more based on the driver count and more logical instead of just spawning a rider every X amount of ticks.
+
+April 1 2026:
+Alistair - Fixed spawn controller and passenger count logic.
