@@ -11,6 +11,7 @@ export default class DispatchEngine
         this.scoring = new Scoring();
         this.totalProfits = 0;
         this.surgeMultiplier = 1;
+        this.expireCount = 0;
     }
 
     update(speedMultiplier = 1)
@@ -149,6 +150,8 @@ export default class DispatchEngine
                 {
                     rider.state = "EXPIRED";
                     this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    this.expireCount++;
+                    console.log("EXPIRED: " + this.expireCount);
                 }
             }
             curr = curr.next;

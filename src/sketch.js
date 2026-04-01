@@ -94,44 +94,30 @@ function draw()
 
 function spawnController()
 {
-    let d = 0;
-    let curr = Simulation.driverList.head;
-    while (curr !== null)
-    {
-        if (curr.state === "AVAILABLE")
-            d++;
-        curr = curr.next;
-    }
-    let r = 0;
-    let currRider = Simulation.riderList.head;
-    while (currRider !== null)
-    {
-        if (currRider.state === "WAITING")
-            r++;
-        currRider = currRider.next;
-    }
-    let busyDrivers = Simulation.riderList.size - d;
-    
-    let ratio = busyDrivers / Simulation.driverList.size;
-    let waitPerDriver = r / Simulation.driverList.size;
-    let helper = Simulation.driverList.size * 0.2;
-    helper += (0.85 - ratio) * Simulation.driverList.size * 0.4;
-    helper += (0.3 - waitPerDriver) * Simulation.driverList.size * 0.6;
+    let busyRatio = (Simulation.driverList.size - Simulation.driverList.count("AVAILABLE")) / Simulation.driverList.size;
 
-    helper = Math.max(0, Math.min(helper, Simulation.driverList.size * 0.8));
+    let waitPerDriver = Simulation.riderList.count("WAITING") / Simulation.driverList.size;
+
+    let rate = Simulation.driverList.size * 0.07;
+    rate += (0.85 - busyRatio) * Simulation.driverList.size * 0.22;
+    rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 1.2;
+
+    if (busyRatio > 0.92)
+        rate -= (busyRatio - 0.92) * Simulation.driverList.size * 0.9;
+
+    rate = Math.max(0, Math.min(rate, Simulation.driverList.size * 0.25));
 
     let speedMult = Simulation.simSpeed / Simulation.baseSimSpeed;
+    spawnBudget += (rate * speedMult) / 60;
 
-    spawnBudget += (helper * speedMult) / 60;
-
-    while (spawnBudget >= 1)
+    let spawnedThisFrame = 0;
+    while (spawnBudget >= 1 && spawnedThisFrame < 2)
     {
         spawnRider(riderLength);
         riderLength += 1;
         spawnBudget -= 1;
+        spawnedThisFrame++;
     }
-    
-
 }
 
 function spawnRider(id)
@@ -140,12 +126,14 @@ function spawnRider(id)
     while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let passengers = Math.floor(Math.random() * 8) + 1;
+    //let passengers = Math.floor(Math.random() * 8) + 1;
+    let passengers = getCount();
+
     let amenitiesRequired = [];
 
     for (let i = 0; i < amenities.length; i++)
     {
-        if (Math.random() > 0.90)
+        if (Math.random() > 0.95)
             amenitiesRequired.push(amenities[i]);
     }
 
@@ -157,6 +145,27 @@ function spawnRider(id)
     Simulation.addRider(request);
 }
 
+function getCount()
+{
+ let chance = Math.random();
+    if (chance < 0.30)
+        return 2;
+    if (chance < 0.55)
+        return 1;
+    if (chance < 0.70)
+        return 3;
+    if (chance < 0.81)
+        return 4;
+    if (chance < 0.89)
+        return 5;
+    if (chance < 0.94)
+        return 6;
+    if (chance < 0.98)
+        return 7;
+    return 8;
+
+}
+
 
 function spawnDriver(id)
 {
@@ -165,12 +174,12 @@ function spawnDriver(id)
     while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let capacity = Math.floor(Math.random() * 5) + 4;
+    let capacity = Math.floor(Math.random() * 5) + 3;
 
     let amenitiesAvailable = [];
     for (let i = 0; i < amenities.length; i++)
     {
-        if (Math.random() > 0.90)
+        if (Math.random() > 0.85)
             amenitiesAvailable.push(amenities[i]);
     }
 
