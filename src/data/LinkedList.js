@@ -60,4 +60,18 @@ export default class LinkedList {
             curr = curr.next;
         }
     }
+
+    count(state)
+    {
+        let c = 0;
+        let curr = this.head;
+        while (curr !== null)
+        {
+            if (curr.state === state)
+                c++;
+            curr = curr.next;
+        }
+        return c;
+        
+    }
 }
