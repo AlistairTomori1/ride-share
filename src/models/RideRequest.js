@@ -5,7 +5,7 @@ const minutes = now.getMinutes();
 const seconds = now.getSeconds();
 export default class RideRequest extends Node
 {
-    constructor(id, location, passengers, amenitiesRequired = [], dropOff)
+    constructor(id, location, passengers, amenitiesRequired = [], dropOff, priority)
     {
         super(id, location, "RIDER")
         this.dropOff = dropOff;
@@ -15,5 +15,6 @@ export default class RideRequest extends Node
         this.state = "WAITING";
         this.assignedDriver = null;
         this.waitTimer = 600;
+        this.priority = priority;
     }
 }

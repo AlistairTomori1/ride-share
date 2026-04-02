@@ -8,6 +8,7 @@ export default class EventLog {
     addEvent(event)
     {
         this.log.push(event);
-        console.log(event);
+        if (this.log.length > 1000)
+            this.log.shift();
     }
 }
