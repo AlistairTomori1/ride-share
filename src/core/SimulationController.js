@@ -8,7 +8,8 @@ export default class SimulationController
     {
         this.driverList = new LinkedList();
         this.riderList = new LinkedList();
-        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList);
+        this.priorityList = new LinkedList();
+        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList);
         this.time = 0;
         //normal sim speed is 100
         this.simSpeed = 100;
@@ -22,8 +23,16 @@ export default class SimulationController
     }
     addRider(rider)
     {
-        this.riderList.addLink(rider);
-        this.dispatchEngine.matchDriverToSingle(rider);
+        if (rider.priority == true)
+        {
+            this.priorityList.addLink(rider);
+            this.dispatchEngine.matchDriverToSingle(rider);
+        }
+        else
+        {
+            this.riderList.addLink(rider);
+            this.dispatchEngine.matchDriverToSingle(rider);
+        }
     }
     tick()
     {
@@ -141,19 +150,36 @@ export default class SimulationController
 
         while (curr !== null)
         {
+            let next = curr.next;
+
             if (curr.state == "PICKED UP")
                 curr.location = curr.assignedDriver.location;
 
             if (curr.state == "DROPPED OFF")
                 this.riderList.remove(curr);
 
-            curr = curr.next;
+            curr = next;
+        }
+
+        curr = this.priorityList.head;
+
+        while (curr !== null)
+        {
+            let next = curr.next;
+
+            if (curr.state == "PICKED UP")
+                curr.location = curr.assignedDriver.location;
+
+            if (curr.state == "DROPPED OFF")
+                this.priorityList.remove(curr);
+
+            curr = next;
         }
     }
 
     updateSurge()
     {
-        let ratio = this.riderList.size / Math.max(1, this.driverList.size);
+        let ratio = (this.riderList.size + this.priorityList.size) / Math.max(1, this.driverList.size);
         let raw = 1 + 0.25 * (ratio - 1);
         let nextSurge = Math.max(1, Math.min(3, Math.round(raw * 4) / 4));
 

@@ -3,10 +3,11 @@ import LinkedList from "../data/LinkedList.js";
 import EventLog from "../models/Event.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList)
+    constructor(DriverList, RiderList, priorityList)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
+        this.priorityList = priorityList;
         this.eventLog = new EventLog();
         this.scoring = new Scoring();
         this.totalProfits = 0;
@@ -76,12 +77,34 @@ export default class DispatchEngine
         return;
     }
 
-        matchRiderToSingle(driver)
+    matchRiderToSingle(driver)
     {
-        let currRider = this.RiderList.head;
+        let currRider = this.priorityList.head;
         let currScore;
         let bestScore = Infinity;
         let bestRider = null;
+        while (currRider !== null)
+        {
+            if (currRider.state == "WAITING")
+            {
+                currScore = this.scoring.calculateScore(driver, currRider);
+                if (currScore < bestScore)
+                {
+                    bestScore = currScore;
+                    bestRider = currRider;
+                }
+            }
+            currRider = currRider.next;
+        }
+        if (bestRider !== null)
+        {
+            this.assignDriver(bestRider, driver);
+            return;
+        }
+
+        currRider = this.RiderList.head;
+        bestScore = Infinity;
+        bestRider = null;
         while (currRider !== null)
         {
             if (currRider.state == "WAITING")
@@ -151,7 +174,26 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.eventLog.addEvent("Rider " + rider.id + " has been expired");
                     this.expireCount++;
-                    console.log("EXPIRED: " + this.expireCount);
+                }
+            }
+            curr = curr.next;
+        }
+
+        curr = this.priorityList.head;
+
+        while (curr !== null)
+        {
+            let rider = curr;
+
+            if (rider.state === "WAITING" && rider.assignedDriver === null)
+            {
+                rider.waitTimer -= speedMultiplier;
+
+                if (rider.waitTimer <= 0)
+                {
+                    rider.state = "EXPIRED";
+                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    this.expireCount++;
                 }
             }
             curr = curr.next;
@@ -161,7 +203,6 @@ export default class DispatchEngine
     calculateProfit(rider)
     {
         let baseProfit = Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10);
-        console.log(this.surgeMultiplier);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 

@@ -40,6 +40,7 @@ let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let spawnBudget = 0;
+let spawnIntergral = 0;
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
@@ -54,12 +55,12 @@ function setup()
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
-    for (let i = 0; i < 10; i++)
+    for (let i = 0; i < 100; i++)
     {
         spawnDriver(i);
     }
 
-    for (let i = 0; i < 5; i++)
+    for (let i = 0; i < 10; i++)
         {
             spawnRider(i);
             riderLength += 1;
@@ -96,7 +97,7 @@ function spawnController()
 {
     let busyRatio = (Simulation.driverList.size - Simulation.driverList.count("AVAILABLE")) / Simulation.driverList.size;
 
-    let waitPerDriver = Simulation.riderList.count("WAITING") / Simulation.driverList.size;
+    let waitPerDriver = (Simulation.riderList.count("WAITING") + Simulation.priorityList.count("WAITING")) / Simulation.driverList.size;
 
     let rate = Simulation.driverList.size * 0.07;
     rate += (0.85 - busyRatio) * Simulation.driverList.size * 0.22;
@@ -140,7 +141,12 @@ function spawnRider(id)
     let dropOff = [0, 0];
     while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]))
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
-    let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff);
+
+    let priority = false;
+    if (Math.random() < 0.25)
+        priority = true;
+
+    let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff, priority);
 
     Simulation.addRider(request);
 }
@@ -216,6 +222,7 @@ function drawDrivers()
 function drawRiders()
 {
      let curr = Simulation.riderList.head;
+     let next;
         while (curr !== null)
         {
             ctx.fillStyle = "#18cc00";
@@ -228,9 +235,37 @@ function drawRiders()
                 ctx.fill();
             }
             else if (curr.state == "EXPIRED")
+            {
+                next = curr.next;
                 Simulation.riderList.remove(curr);
+                curr = next;
+                continue;
+            }
             curr = curr.next;
         }
+
+    curr = Simulation.priorityList.head;
+    while (curr !== null)
+        {
+            ctx.fillStyle = "#18cc00";
+            ctx.fillRect(curr.location[0]-10, curr.location[1]-10, 20, 20);
+
+            if (curr.state == "PICKED UP")
+            {
+                ctx.beginPath();
+                ctx.arc(curr.dropOff[0], curr.dropOff[1], 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            else if (curr.state == "EXPIRED")
+            {
+                next = curr.next;
+                Simulation.priorityList.remove(curr);
+                curr = next;
+                continue;
+            }
+            curr = curr.next;
+        }
+        
 }
 
 function drawGrid(size)
@@ -295,54 +330,24 @@ function displayStats()
     drawPauseButton();
     drawSpeedButtons();
 
-    const lines = [];
-    let curr;
+    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
     if (activeStatsTab === "list")
     {
-        curr = Simulation.driverList.head;
-        lines.push("Drivers");
-        while (curr !== null)
-        {
-            lines.push(curr.location + " " + curr.state + " $" + curr.profits);
-            if (curr.amenities.length > 0)
-                lines.push(curr.capacity + " seats, has: " + curr.amenities);
-            else
-                lines.push(curr.capacity + " seats");
-            curr = curr.next;
-        }
-
-        lines.push("");
-        lines.push("Riders");
-        curr = Simulation.riderList.head;
-        while (curr !== null)
-        {
-            lines.push(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
-            if (curr.amenitiesRequired.length > 0)
-                lines.push(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
-            else
-                lines.push(curr.passengers + " people");
-            curr = curr.next;
-        }
+        const totalListLines = 5 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size);
+        statsContentHeight = totalListLines * statsLineHeight;
     }
     else
     {
-        const eventLines = Simulation.dispatchEngine.eventLog.log;
-        if (eventLines.length === 0)
-            lines.push("No events yet");
-        else
-        {
-            for (let i = eventLines.length - 1; i >= 0; i--)
-            {
-                lines.push(eventLines[i]);
-            }
-        }
+        const eventCount = Simulation.dispatchEngine.eventLog.log.length;
+        statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
 
-    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
-    statsContentHeight = lines.length * statsLineHeight;
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
     statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
     const activeScrollY = statsScrollByTab[activeStatsTab];
+    const firstVisibleLine = Math.max(0, Math.floor(activeScrollY / statsLineHeight));
+    const visibleLineCount = Math.ceil(statsViewportHeight / statsLineHeight) + 1;
+    const lastVisibleLine = firstVisibleLine + visibleLineCount;
 
     ctx.save();
     ctx.beginPath();
@@ -350,16 +355,103 @@ function displayStats()
     ctx.clip();
     ctx.fillStyle = "#ffffff";
 
-    let y = statsViewportTop + statsLineHeight - activeScrollY;
-    for (let i = 0; i < lines.length; i++)
+    const drawLine = (lineIndex, text, isSection = false) =>
     {
-        if (activeStatsTab === "list" && (lines[i] === "Drivers" || lines[i] === "Riders"))
+        if (activeStatsTab === "list" && isSection)
             ctx.font = sectionFont;
         else
             ctx.font = normalFont;
-        ctx.fillText(lines[i], statsPanelX + statsPadding, y);
-        y += statsLineHeight;
+        const y = statsViewportTop + statsLineHeight - activeScrollY + lineIndex * statsLineHeight;
+        ctx.fillText(text, statsPanelX + statsPadding, y);
+    };
+
+    let lineIndex = 0;
+    const maybeDrawLine = (text, isSection = false) =>
+    {
+        if (lineIndex > lastVisibleLine)
+            return true;
+
+        if (lineIndex >= firstVisibleLine)
+            drawLine(lineIndex, text, isSection);
+
+        lineIndex += 1;
+        return lineIndex > lastVisibleLine;
+    };
+
+    if (activeStatsTab === "list")
+    {
+        let done = maybeDrawLine("Drivers", true);
+        let curr = Simulation.driverList.head;
+        while (!done && curr !== null)
+        {
+            done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
+            if (done)
+                break;
+
+            if (curr.amenities.length > 0)
+                done = maybeDrawLine(curr.capacity + " seats, has: " + curr.amenities);
+            else
+                done = maybeDrawLine(curr.capacity + " seats");
+
+            curr = curr.next;
+        }
+
+        if (!done)
+            done = maybeDrawLine("");
+        if (!done)
+            done = maybeDrawLine("Priority Riders", true);
+
+        curr = Simulation.priorityList.head;
+        while (!done && curr !== null)
+        {
+            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+            if (done)
+                break;
+
+            if (curr.amenitiesRequired.length > 0)
+                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+            else
+                done = maybeDrawLine(curr.passengers + " people");
+
+            curr = curr.next;
+        }
+
+        if (!done)
+            done = maybeDrawLine("");
+        if (!done)
+            done = maybeDrawLine("Non-Priority Riders", true);
+
+        curr = Simulation.riderList.head;
+        while (!done && curr !== null)
+        {
+            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+            if (done)
+                break;
+
+            if (curr.amenitiesRequired.length > 0)
+                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+            else
+                done = maybeDrawLine(curr.passengers + " people");
+
+            curr = curr.next;
+        }
     }
+    else
+    {
+        const eventLines = Simulation.dispatchEngine.eventLog.log;
+        if (eventLines.length === 0)
+            maybeDrawLine("No events yet");
+        else
+        {
+            for (let i = 0; i < eventLines.length; i++)
+            {
+                const stop = maybeDrawLine(eventLines[eventLines.length - 1 - i]);
+                if (stop)
+                    break;
+            }
+        }
+    }
+
     ctx.restore();
 
     if (maxScroll > 0)
