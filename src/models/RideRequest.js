@@ -16,5 +16,6 @@ export default class RideRequest extends Node
         this.assignedDriver = null;
         this.waitTimer = 600;
         this.priority = priority;
+        this.cost;
     }
 }

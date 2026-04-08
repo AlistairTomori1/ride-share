@@ -20,9 +20,11 @@ export default class SimulationController
     addDriver(driver)
     {
         this.driverList.addLink(driver);
+        this.dispatchEngine.availableCount++;
     }
     addRider(rider)
     {
+        this.dispatchEngine.waitingCount++;
         if (rider.priority == true)
         {
             this.priorityList.addLink(rider);
@@ -135,6 +137,7 @@ export default class SimulationController
                         this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
                     }
                     curr.assignedRider = null;
+                    this.dispatchEngine.availableCount++;
                     curr.state = "AVAILABLE";
                     curr.rotation = 0;
                     this.dispatchEngine.matchRiderToSingle(curr);
