@@ -135,6 +135,9 @@ export default class SimulationController
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
                         this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
+                        let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
+                        curr.profits += tripProfit;
+                        this.dispatchEngine.totalProfits += tripProfit;
                     }
                     curr.assignedRider = null;
                     this.dispatchEngine.availableCount++;

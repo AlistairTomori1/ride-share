@@ -24,36 +24,6 @@ export default class DispatchEngine
         //this.matchDriversToRides();
     }
 
-    matchDriversToRides()
-    {
-        let currRider = this.RiderList.head;
-        while(currRider !== null)
-        {
-            if (currRider.state === "WAITING")
-            {
-            let currDriver = this.DriverList.head;
-            let currScore;
-            let bestScore = Infinity;
-            let bestDriver = null;
-            while(currDriver !== null)
-            {
-                if (currDriver.state == "AVAILABLE")
-                {
-                currScore = this.scoring.calculateScore(currDriver, currRider);
-                if (currScore < bestScore)
-                {
-                    bestScore = currScore;
-                    bestDriver = currDriver;
-                }
-            }
-                currDriver = currDriver.next;
-            }
-            if (bestDriver !== null)
-                this.assignDriver(currRider, bestDriver);
-        }
-            currRider = currRider.next;
-        }
-    }
 
     matchDriverToSingle(rider)
     {
@@ -75,7 +45,11 @@ export default class DispatchEngine
             currDriver = currDriver.next;
         }
         if (bestDriver !== null)
+        {
+            rider.cost = bestScore;
             this.assignDriver(rider, bestDriver);
+
+        }
         return;
     }
 
@@ -135,9 +109,6 @@ export default class DispatchEngine
         rider.state = "MATCHED";
         driver.busyTimer = 5;
         this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
-        let tripProfit = this.calculateProfit(rider);
-        driver.profits += tripProfit;
-        this.totalProfits += tripProfit;
     }
     updateBusyDrivers()
     {
@@ -208,7 +179,7 @@ export default class DispatchEngine
 
     calculateProfit(rider)
     {
-        let baseProfit = Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10);
+        let baseProfit = Math.floor(rider.cost / 10);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 

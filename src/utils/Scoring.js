@@ -18,7 +18,7 @@ export default class Scoring
         if (driver.capacity < rider.passengers)
             return Infinity;
         else
-            return(1);
+            return(0);
 
     }
 
@@ -37,7 +37,7 @@ export default class Scoring
         if (score < rider.amenitiesRequired.length)
             return(Infinity);
         else
-            return(1);
+            return(0);
 
     }
 
