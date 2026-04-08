@@ -15,11 +15,13 @@ export default class SimulationController
         this.simSpeed = 100;
         this.baseSimSpeed = this.simSpeed;
         this.pause = 1;
+        this.availableCount = 0;
     }
 
     addDriver(driver)
     {
         this.driverList.addLink(driver);
+        this.availableCount++;
     }
     addRider(rider)
     {
