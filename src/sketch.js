@@ -13,7 +13,8 @@ let size = 40;
 let amenities = ["Child seat", "Pet", "Wheelchair"];
 const dividerX = 1200;
 const dividerWidth = 12;
-const statsPanelX = dividerX + dividerWidth;
+const TEXT_ONLY_MODE = false;
+const statsPanelX = TEXT_ONLY_MODE ? 0 : dividerX + dividerWidth;
 const statsPadding = 10;
 const statsTabY = 12;
 const statsTabHeight = 28;
@@ -50,12 +51,13 @@ function setup()
 {
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
-    canvas.width = width + 275;
+    canvas.width = TEXT_ONLY_MODE ? 420 : width + 275;
     canvas.height = height;
+
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
-    for (let i = 0; i < 100; i++)
+    for (let i = 0; i < 10; i++)
     {
         spawnDriver(i);
     }
@@ -65,8 +67,6 @@ function setup()
             spawnRider(i);
             riderLength += 1;
         }
-    console.log(Simulation.driverList);
-    console.log(Simulation.riderList);
     draw();
 }
 
@@ -76,28 +76,28 @@ function draw()
 
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
-    drawGrid(size);
-    
-    if (Simulation.pause == 1)
-    {
-        spawnController();
+    if (!TEXT_ONLY_MODE) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
+        drawGrid(size);
+        drawRoute();
+        drawDrivers();
+        drawRiders();
     }
-    drawRoute();
-    drawDrivers();
-    drawRiders();
 
     displayStats();
+
+    if (Simulation.pause == 1)
+        spawnController()
 
     requestAnimationFrame(draw);
 }
 
 function spawnController()
 {
-    let busyRatio = (Simulation.driverList.size - Simulation.driverList.count("AVAILABLE")) / Simulation.driverList.size;
+    let busyRatio = (Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size;
 
-    let waitPerDriver = (Simulation.riderList.count("WAITING") + Simulation.priorityList.count("WAITING")) / Simulation.driverList.size;
+    let waitPerDriver = (Simulation.dispatchEngine.waitingCount) / Simulation.driverList.size;
 
     let rate = Simulation.driverList.size * 0.07;
     rate += (0.85 - busyRatio) * Simulation.driverList.size * 0.22;
@@ -112,12 +112,11 @@ function spawnController()
     spawnBudget += (rate * speedMult) / 60;
 
     let spawnedThisFrame = 0;
-    while (spawnBudget >= 1 && spawnedThisFrame < 2)
+    while (spawnBudget >= 1)
     {
         spawnRider(riderLength);
         riderLength += 1;
         spawnBudget -= 1;
-        spawnedThisFrame++;
     }
 }
 

@@ -13,6 +13,8 @@ export default class DispatchEngine
         this.totalProfits = 0;
         this.surgeMultiplier = 1;
         this.expireCount = 0;
+        this.availableCount = 0;
+        this.waitingCount = 0;
     }
 
     update(speedMultiplier = 1)
@@ -126,6 +128,8 @@ export default class DispatchEngine
     assignDriver(rider, driver)
     {
         driver.state = "PICKING UP";
+        this.availableCount--;
+        this.waitingCount--;
         driver.assignedRider = rider;
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
@@ -172,6 +176,7 @@ export default class DispatchEngine
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
+                    this.waitingCount--;
                     this.eventLog.addEvent("Rider " + rider.id + " has been expired");
                     this.expireCount++;
                 }
@@ -192,6 +197,7 @@ export default class DispatchEngine
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
+                    this.waitingCount--;
                     this.eventLog.addEvent("Rider " + rider.id + " has been expired");
                     this.expireCount++;
                 }
