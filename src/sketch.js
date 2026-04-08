@@ -111,7 +111,6 @@ function spawnController()
     let speedMult = Simulation.simSpeed / Simulation.baseSimSpeed;
     spawnBudget += (rate * speedMult) / 60;
 
-    let spawnedThisFrame = 0;
     while (spawnBudget >= 1)
     {
         spawnRider(riderLength);
