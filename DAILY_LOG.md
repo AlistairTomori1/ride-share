@@ -58,3 +58,6 @@ Alistair - Fixed spawn controller and passenger count logic.
 
 April 2 2026:
 Alistair - Made priority queue list. Fixed riders not expiring under large load bug. removed per-frame console logs. Virtualize stats text. Cap event log length at 1000.
+
+April 8 2026:
+Alistair - Made priority list use true priority queue data structure.
