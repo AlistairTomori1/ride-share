@@ -1,14 +1,14 @@
 import Scoring from "../utils/Scoring.js";
 import LinkedList from "../data/LinkedList.js";
-import EventLog from "../models/Event.js";
+import Event from "../models/Event.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList, priorityList)
+    constructor(DriverList, RiderList, priorityList, eventLog)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
         this.priorityList = priorityList;
-        this.eventLog = new EventLog();
+        this.eventLog = eventLog;
         this.scoring = new Scoring();
         this.totalProfits = 0;
         this.surgeMultiplier = 1;
@@ -24,36 +24,6 @@ export default class DispatchEngine
         //this.matchDriversToRides();
     }
 
-    matchDriversToRides()
-    {
-        let currRider = this.RiderList.head;
-        while(currRider !== null)
-        {
-            if (currRider.state === "WAITING")
-            {
-            let currDriver = this.DriverList.head;
-            let currScore;
-            let bestScore = Infinity;
-            let bestDriver = null;
-            while(currDriver !== null)
-            {
-                if (currDriver.state == "AVAILABLE")
-                {
-                currScore = this.scoring.calculateScore(currDriver, currRider);
-                if (currScore < bestScore)
-                {
-                    bestScore = currScore;
-                    bestDriver = currDriver;
-                }
-            }
-                currDriver = currDriver.next;
-            }
-            if (bestDriver !== null)
-                this.assignDriver(currRider, bestDriver);
-        }
-            currRider = currRider.next;
-        }
-    }
 
     matchDriverToSingle(rider)
     {
@@ -75,7 +45,11 @@ export default class DispatchEngine
             currDriver = currDriver.next;
         }
         if (bestDriver !== null)
+        {
+            rider.cost = bestScore;
             this.assignDriver(rider, bestDriver);
+
+        }
         return;
     }
 
@@ -100,6 +74,7 @@ export default class DispatchEngine
         }
         if (bestRider !== null)
         {
+            bestRider.cost = bestScore;
             this.assignDriver(bestRider, driver);
             return;
         }
@@ -121,7 +96,10 @@ export default class DispatchEngine
             currRider = currRider.next;
         }
         if (bestRider !== null)
+        {
+            bestRider.cost = bestScore;
             this.assignDriver(bestRider, driver);
+        }
         return;
     }
 
@@ -134,10 +112,8 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
-        let tripProfit = this.calculateProfit(rider);
-        driver.profits += tripProfit;
-        this.totalProfits += tripProfit;
+        let event = new Event("Driver " + driver.id + " has been assigned to rider " + rider.id);
+        this.eventLog.addLink(event);
     }
     updateBusyDrivers()
     {
@@ -177,7 +153,8 @@ export default class DispatchEngine
                 {
                     rider.state = "EXPIRED";
                     this.waitingCount--;
-                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    let event = new Event("Rider " + rider.id + " has been expired");
+                    this.eventLog.addLink(event);
                     this.expireCount++;
                 }
             }
@@ -198,7 +175,8 @@ export default class DispatchEngine
                 {
                     rider.state = "EXPIRED";
                     this.waitingCount--;
-                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    let event = new Event("Rider " + rider.id + " has been expired");
+                    this.eventLog.addLink(event);
                     this.expireCount++;
                 }
             }
@@ -208,7 +186,7 @@ export default class DispatchEngine
 
     calculateProfit(rider)
     {
-        let baseProfit = Math.floor(this.scoring.scoreDistance(rider.assignedDriver, rider) / 10);
+        let baseProfit = Math.floor(rider.cost / 10);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 

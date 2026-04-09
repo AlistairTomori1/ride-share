@@ -14,7 +14,8 @@ let amenities = ["Child seat", "Pet", "Wheelchair"];
 const dividerX = 1200;
 const dividerWidth = 12;
 const TEXT_ONLY_MODE = false;
-const statsPanelX = TEXT_ONLY_MODE ? 0 : dividerX + dividerWidth;
+let textOnlyMode = TEXT_ONLY_MODE;
+let statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
 const statsPadding = 10;
 const statsTabY = 12;
 const statsTabHeight = 28;
@@ -25,6 +26,9 @@ const statsHeaderY = 80;
 const surgeButtonY = statsHeaderY - 14;
 const surgeButtonWidth = 74;
 const surgeButtonHeight = 20;
+const textModeButtonWidth = 120;
+const textModeButtonHeight = 20;
+const textModeButtonY = statsHeaderY - 34;
 const pauseButtonY = statsHeaderY + 8;
 const pauseButtonHeight = 20;
 const pauseButtonWidth = 90;
@@ -51,7 +55,7 @@ function setup()
 {
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
-    canvas.width = TEXT_ONLY_MODE ? 420 : width + 275;
+    canvas.width = textOnlyMode ? 420 : width + 275;
     canvas.height = height;
 
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
@@ -76,7 +80,7 @@ function draw()
 
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (!TEXT_ONLY_MODE) {
+    if (!textOnlyMode) {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
         drawGrid(size);
@@ -325,6 +329,7 @@ function displayStats()
     ctx.font = normalFont;
     ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
     drawSurgeButton();
+    drawTextModeButton();
     drawPauseButton();
     drawSpeedButtons();
 
@@ -336,7 +341,7 @@ function displayStats()
     }
     else
     {
-        const eventCount = Simulation.dispatchEngine.eventLog.log.length;
+        const eventCount = Simulation.dispatchEngine.eventLog.size;
         statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
 
@@ -436,16 +441,19 @@ function displayStats()
     }
     else
     {
-        const eventLines = Simulation.dispatchEngine.eventLog.log;
-        if (eventLines.length === 0)
+        const eventLogList = Simulation.dispatchEngine.eventLog;
+        if (!eventLogList || eventLogList.size === 0)
             maybeDrawLine("No events yet");
         else
         {
-            for (let i = 0; i < eventLines.length; i++)
+            let currEvent = eventLogList.tail;
+            while (currEvent !== null)
             {
-                const stop = maybeDrawLine(eventLines[eventLines.length - 1 - i]);
+                const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+                const stop = maybeDrawLine(eventText);
                 if (stop)
                     break;
+                currEvent = currEvent.prev;
             }
         }
     }
@@ -527,6 +535,16 @@ function drawSurgeButton()
     ctx.fillText("Surge +10", buttonX + 8, surgeButtonY + 14);
 }
 
+function drawTextModeButton()
+{
+    const buttonX = statsPanelX + statsPadding;
+    ctx.fillStyle = textOnlyMode ? "#ffffff" : "#4f4f4f";
+    ctx.fillRect(buttonX, textModeButtonY, textModeButtonWidth, textModeButtonHeight);
+    ctx.fillStyle = textOnlyMode ? "#1e1e1e" : "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Text only mode", buttonX + 12, textModeButtonY + 14);
+}
+
 function drawSpeedButtons()
 {
     const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
@@ -559,6 +577,7 @@ function onStatsPanelMouseDown(event)
     const mouseY = event.clientY - rect.top;
     const buttonX = statsPanelX + statsPadding;
     const surgeButtonX = statsPanelX + 150;
+    const textModeButtonX = statsPanelX + statsPadding;
     const speedStartX = buttonX + pauseButtonWidth + 6;
 
     if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
@@ -568,6 +587,14 @@ function onStatsPanelMouseDown(event)
             spawnRider(riderLength);
             riderLength += 1;
         }
+        return;
+    }
+
+    if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= textModeButtonY && mouseY <= textModeButtonY + textModeButtonHeight)
+    {
+        textOnlyMode = !textOnlyMode;
+        statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
+        canvas.width = textOnlyMode ? 420 : width + 275;
         return;
     }
 

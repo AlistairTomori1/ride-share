@@ -2,14 +2,16 @@ import DispatchEngine from "./DispatchEngine.js";
 import LinkedList from "../data/LinkedList.js";
 import Driver from "../models/Driver.js";
 import Rider from "../models/RideRequest.js";
+import Event from "../models/Event.js"
 export default class SimulationController
 {
     constructor()
     {
         this.driverList = new LinkedList();
         this.riderList = new LinkedList();
+        this.eventLog = new LinkedList();
         this.priorityList = new LinkedList();
-        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList);
+        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList, this.eventLog);
         this.time = 0;
         //normal sim speed is 100
         this.simSpeed = 100;
@@ -44,6 +46,7 @@ export default class SimulationController
         this.moveDrivers();
         this.moveRiders();
         this.updateSurge();
+        this.expireOldEvents();
     }
     
     runSim()
@@ -100,7 +103,9 @@ export default class SimulationController
                 {
                     curr.assignedRider.state = "PICKED UP";
                     curr.state = "DROPPING OFF";
-                    this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id)
+                    let event = new Event("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id);
+
+                    this.dispatchEngine.eventLog.addLink(event);
                 }
             }
 
@@ -134,7 +139,11 @@ export default class SimulationController
                     {
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
-                        this.dispatchEngine.eventLog.addEvent("Driver " + curr.id + " has dropped off rider " + droppedRider.id)
+                        let event = new Event("Driver " + curr.id + " has dropped off rider " + droppedRider.id);
+                        this.dispatchEngine.eventLog.addLink(event);
+                        let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
+                        curr.profits += tripProfit;
+                        this.dispatchEngine.totalProfits += tripProfit;
                     }
                     curr.assignedRider = null;
                     this.dispatchEngine.availableCount++;
@@ -189,7 +198,14 @@ export default class SimulationController
         if (nextSurge !== this.dispatchEngine.surgeMultiplier)
         {
             this.dispatchEngine.surgeMultiplier = nextSurge;
-            this.dispatchEngine.eventLog.addEvent("Surge updated to " + this.dispatchEngine.surgeMultiplier.toFixed(2) + "x");
+            let event = new Event("Surge updated to " + this.dispatchEngine.surgeMultiplier.toFixed(2) + "x");
+            this.dispatchEngine.eventLog.addLink(event);
         }
+    }
+
+    expireOldEvents()
+    {
+        while(this.dispatchEngine.eventLog.size > 1000)
+            this.dispatchEngine.eventLog.remove(this.dispatchEngine.eventLog.head);
     }
 }

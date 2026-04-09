@@ -9,7 +9,7 @@ export default class Scoring
     {
         let xDist = Math.abs(driver.location[0] - rider.location[0]);
         let yDist = Math.abs(driver.location[1] - rider.location[1]);
-        let dist = Math.sqrt((xDist ** 2) + (yDist ** 2));
+        let dist = xDist + yDist;
         return(dist);
     }
 
@@ -18,7 +18,7 @@ export default class Scoring
         if (driver.capacity < rider.passengers)
             return Infinity;
         else
-            return(1);
+            return(0);
 
     }
 
@@ -37,7 +37,7 @@ export default class Scoring
         if (score < rider.amenitiesRequired.length)
             return(Infinity);
         else
-            return(1);
+            return(0);
 
     }
 
