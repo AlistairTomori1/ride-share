@@ -61,3 +61,6 @@ Alistair - Made priority queue list. Fixed riders not expiring under large load 
 
 April 8 2026:
 Alistair - Worked on priority list. Cleaned up code + added driver payment after dropoff
+
+April 9 2026:
+Alistair - Added a button for text only mode

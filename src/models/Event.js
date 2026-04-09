@@ -1,14 +1,8 @@
-export default class EventLog {
+import Node from "../data/Node.js";
+export default class Event{
 
-    constructor()
+    constructor(event)
     {
-        this.log = [];
-    }
-
-    addEvent(event)
-    {
-        this.log.push(event);
-        if (this.log.length > 1000)
-            this.log.shift();
+        this.event = event;
     }
 }

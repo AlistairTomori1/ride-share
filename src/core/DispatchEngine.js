@@ -1,14 +1,14 @@
 import Scoring from "../utils/Scoring.js";
 import LinkedList from "../data/LinkedList.js";
-import EventLog from "../models/Event.js";
+import Event from "../models/Event.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList, priorityList)
+    constructor(DriverList, RiderList, priorityList, eventLog)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
         this.priorityList = priorityList;
-        this.eventLog = new EventLog();
+        this.eventLog = eventLog;
         this.scoring = new Scoring();
         this.totalProfits = 0;
         this.surgeMultiplier = 1;
@@ -74,6 +74,7 @@ export default class DispatchEngine
         }
         if (bestRider !== null)
         {
+            bestRider.cost = bestScore;
             this.assignDriver(bestRider, driver);
             return;
         }
@@ -95,7 +96,10 @@ export default class DispatchEngine
             currRider = currRider.next;
         }
         if (bestRider !== null)
+        {
+            bestRider.cost = bestScore;
             this.assignDriver(bestRider, driver);
+        }
         return;
     }
 
@@ -108,7 +112,8 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        this.eventLog.addEvent("Driver " + driver.id + " has been assigned to rider " + rider.id);
+        let event = new Event("Driver " + driver.id + " has been assigned to rider " + rider.id);
+        this.eventLog.addLink(event);
     }
     updateBusyDrivers()
     {
@@ -148,7 +153,8 @@ export default class DispatchEngine
                 {
                     rider.state = "EXPIRED";
                     this.waitingCount--;
-                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    let event = new Event("Rider " + rider.id + " has been expired");
+                    this.eventLog.addLink(event);
                     this.expireCount++;
                 }
             }
@@ -169,7 +175,8 @@ export default class DispatchEngine
                 {
                     rider.state = "EXPIRED";
                     this.waitingCount--;
-                    this.eventLog.addEvent("Rider " + rider.id + " has been expired");
+                    let event = new Event("Rider " + rider.id + " has been expired");
+                    this.eventLog.addLink(event);
                     this.expireCount++;
                 }
             }
