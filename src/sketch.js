@@ -20,15 +20,11 @@ const statsPadding = 10;
 const statsTabY = 12;
 const statsTabHeight = 28;
 const statsTabGap = 6;
-const listTabWidth = 165;
-const eventsTabWidth = 70;
 const statsHeaderY = 80;
-const surgeButtonY = statsHeaderY - 14;
 const surgeButtonWidth = 74;
 const surgeButtonHeight = 20;
 const textModeButtonWidth = 120;
 const textModeButtonHeight = 20;
-const textModeButtonY = statsHeaderY - 34;
 const pauseButtonY = statsHeaderY + 8;
 const pauseButtonHeight = 20;
 const pauseButtonWidth = 90;
@@ -36,11 +32,25 @@ const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
 const speedMultipliers = [0.5, 1, 2, 10];
+const listSubTabY = pauseButtonY + speedButtonHeight + 8;
+const listSubTabHeight = 20;
+const listSubTabGap = 4;
+const settingsSurgeButtonY = statsHeaderY + 8;
+const settingsTextModeButtonY = settingsSurgeButtonY + 24;
+const settingsControlY = settingsTextModeButtonY + 24;
+const gridButtonY = settingsControlY + 28;
+const gridButtonGap = 4;
+const gridButtonWidth = 34;
+const gridSizes = [5, 10, 20, 40, 80];
+const gridLabels = ["5", "10", "20", "40", "80"];
 const statsViewportTop = 110;
+const listViewportTop = listSubTabY + listSubTabHeight + 8;
+const eventsViewportTop = 92;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
 let activeStatsTab = "list";
-let statsScrollByTab = { list: 0, events: 0 };
+let statsScrollByTab = { list: 0, events: 0, settings: 0 };
+let activeListSubTab = "all";
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
@@ -125,10 +135,10 @@ function spawnController()
 
 function spawnRider(id)
 {
-    let location = [0, 0];
-    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
-        location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
-
+    let location;
+    do {
+        location = [size * Math.floor(Math.random() * (width / size)), size * Math.floor(Math.random() * (height / size))];
+    } while (location[0] < size - 10 || location[1] < size - 10 || location[0] > width - size || location[1] > height - size);
     //let passengers = Math.floor(Math.random() * 8) + 1;
     let passengers = getCount();
 
@@ -140,9 +150,10 @@ function spawnRider(id)
             amenitiesRequired.push(amenities[i]);
     }
 
-    let dropOff = [0, 0];
-    while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]))
+    let dropOff;
+    do {
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
+    } while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]));
 
     let priority = false;
     if (Math.random() < 0.25)
@@ -178,11 +189,14 @@ function getCount()
 function spawnDriver(id)
 {
 
-    let location = [0, 0];
-    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
+    let location;
+    do {
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let capacity = Math.floor(Math.random() * 5) + 3;
+    } while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size);
+
+    //let capacity = Math.floor(Math.random() * 5) + 3;
+    let capacity = getCapacity();
 
     let amenitiesAvailable = [];
     for (let i = 0; i < amenities.length; i++)
@@ -194,6 +208,18 @@ function spawnDriver(id)
     let driver = new Driver(id, location, capacity, amenitiesAvailable);
 
     Simulation.addDriver(driver);
+}
+
+function getCapacity()
+{
+ let chance = Math.random();
+    if (chance < 0.60)
+        return 5;
+    if (chance < 0.80)
+        return 2;
+    if (chance < 0.90)
+        return 7;
+    return 10;
 }
 
 function drawDrivers()
@@ -290,60 +316,106 @@ function drawGrid(size)
     }
 }
 //AI IMPLEMENTED
+function getStatsTabLayout()
+{
+    const tabX = statsPanelX + statsPadding;
+    const availableWidth = canvas.width - tabX - statsPadding;
+    const tabWidth = Math.floor((availableWidth - (2 * statsTabGap)) / 3);
+    const listTabX = tabX;
+    const eventsTabX = listTabX + tabWidth + statsTabGap;
+    const settingsTabX = eventsTabX + tabWidth + statsTabGap;
+    const listLabel = tabWidth < 120 ? "List" : "Driver/Rider List";
+
+    return { tabWidth, listTabX, eventsTabX, settingsTabX, listLabel };
+}
+
+function getListSubTabLayout()
+{
+    const subTabs = [
+        { id: "all", label: "All" },
+        { id: "drivers", label: "Drivers" },
+        { id: "riders", label: "Riders" },
+        { id: "expired", label: "Expired" }
+    ];
+
+    const startX = statsPanelX + statsPadding;
+    const availableWidth = canvas.width - startX - statsPadding;
+    const tabWidth = Math.floor((availableWidth - ((subTabs.length - 1) * listSubTabGap)) / subTabs.length);
+
+    return { subTabs, startX, tabWidth };
+}
+
 function displayStats()
 {
+    if (!["all", "drivers", "riders", "expired"].includes(activeListSubTab))
+        activeListSubTab = "all";
+
     const normalFont = "16px serif";
     const sectionFont = "bold 20px serif";
     const tabFont = "13px serif";
-    const tabX = statsPanelX + statsPadding;
-    const listTabX = tabX;
-    const eventsTabX = listTabX + listTabWidth + statsTabGap;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
+    const listLabel = tabLayout.listLabel;
+
+    const drawTab = (x, w, label, isActive) =>
+    {
+        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
+        ctx.fillRect(x, statsTabY, w, statsTabHeight);
+        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
+        ctx.fillText(label, x + 10, statsTabY + 19);
+    };
 
     ctx.font = tabFont;
-    if (activeStatsTab === "list")
-    {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
-        ctx.fillStyle = "#1e1e1e";
-        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
-
-        ctx.fillStyle = "#4f4f4f";
-        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
-    }
-    else
-    {
-        ctx.fillStyle = "#4f4f4f";
-        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
-        ctx.fillStyle = "#1e1e1e";
-        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
-    }
+    drawTab(listTabX, tabWidth, listLabel, activeStatsTab === "list");
+    drawTab(eventsTabX, tabWidth, "Events", activeStatsTab === "events");
+    drawTab(settingsTabX, tabWidth, "Settings", activeStatsTab === "settings");
 
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
     ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
-    drawSurgeButton();
-    drawTextModeButton();
-    drawPauseButton();
-    drawSpeedButtons();
 
-    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
     if (activeStatsTab === "list")
     {
-        const totalListLines = 5 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size);
-        statsContentHeight = totalListLines * statsLineHeight;
+        drawPauseButton(pauseButtonY);
+        drawSpeedButtons("list");
+        drawListSubTabs();
     }
-    else
+    else if (activeStatsTab === "settings")
+    {
+        drawSurgeButton(settingsSurgeButtonY);
+        drawTextModeButton(settingsTextModeButtonY);
+        drawPauseButton(settingsControlY);
+        drawSpeedButtons("settings");
+        drawGridSizeButtons();
+    }
+
+    let viewportTop = statsViewportTop;
+    if (activeStatsTab === "list")
+        viewportTop = listViewportTop;
+    else if (activeStatsTab === "events")
+        viewportTop = eventsViewportTop;
+    const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
+    if (activeStatsTab === "list")
+    {
+        if (activeListSubTab === "all")
+            statsContentHeight = (7 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size + Simulation.dispatchEngine.expiredList.size)) * statsLineHeight;
+        else if (activeListSubTab === "drivers")
+            statsContentHeight = Math.max(1, (1 + 2 * Simulation.driverList.size) * statsLineHeight);
+        else if (activeListSubTab === "riders")
+            statsContentHeight = Math.max(1, (3 + 2 * (Simulation.priorityList.size + Simulation.riderList.size)) * statsLineHeight);
+        else if (activeListSubTab === "expired")
+            statsContentHeight = Math.max(1, (1 + 2 * Simulation.dispatchEngine.expiredList.size) * statsLineHeight);
+    }
+    else if (activeStatsTab === "events")
     {
         const eventCount = Simulation.dispatchEngine.eventLog.size;
         statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
+    else
+        statsContentHeight = 0;
 
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
     statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
@@ -354,17 +426,17 @@ function displayStats()
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(statsPanelX, statsViewportTop, canvas.width - statsPanelX, statsViewportHeight);
+    ctx.rect(statsPanelX, viewportTop, canvas.width - statsPanelX, statsViewportHeight);
     ctx.clip();
     ctx.fillStyle = "#ffffff";
 
     const drawLine = (lineIndex, text, isSection = false) =>
     {
-        if (activeStatsTab === "list" && isSection)
+        if (isSection)
             ctx.font = sectionFont;
         else
             ctx.font = normalFont;
-        const y = statsViewportTop + statsLineHeight - activeScrollY + lineIndex * statsLineHeight;
+        const y = viewportTop + statsLineHeight - activeScrollY + lineIndex * statsLineHeight;
         ctx.fillText(text, statsPanelX + statsPadding, y);
     };
 
@@ -383,68 +455,123 @@ function displayStats()
 
     if (activeStatsTab === "list")
     {
-        let done = maybeDrawLine("Drivers", true);
-        let curr = Simulation.driverList.head;
-        while (!done && curr !== null)
+        let done = false;
+        let curr = null;
+        let expiredCurr = null;
+
+        if (activeListSubTab === "all" || activeListSubTab === "drivers")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
-            if (done)
-                break;
+            done = maybeDrawLine("Drivers", true);
+            curr = Simulation.driverList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
+                if (done)
+                    break;
 
-            if (curr.amenities.length > 0)
-                done = maybeDrawLine(curr.capacity + " seats, has: " + curr.amenities);
-            else
-                done = maybeDrawLine(curr.capacity + " seats");
+                if (curr.amenities.length > 0)
+                    done = maybeDrawLine(curr.capacity + " seats, has: " + curr.amenities);
+                else
+                    done = maybeDrawLine(curr.capacity + " seats");
 
-            curr = curr.next;
+                curr = curr.next;
+            }
         }
 
-        if (!done)
-            done = maybeDrawLine("");
-        if (!done)
-            done = maybeDrawLine("Priority Riders", true);
-
-        curr = Simulation.priorityList.head;
-        while (!done && curr !== null)
+        if (activeListSubTab === "all" || activeListSubTab === "riders")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
-            if (done)
-                break;
+            if (activeListSubTab === "all" && !done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Priority Riders", true);
 
-            if (curr.amenitiesRequired.length > 0)
-                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
-            else
-                done = maybeDrawLine(curr.passengers + " people");
+            curr = Simulation.priorityList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                if (done)
+                    break;
 
-            curr = curr.next;
+                if (curr.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(curr.passengers + " people");
+
+                curr = curr.next;
+            }
+
+            if (!done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Non-Priority Riders", true);
+
+            curr = Simulation.riderList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                if (done)
+                    break;
+
+                if (curr.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(curr.passengers + " people");
+
+                curr = curr.next;
+            }
         }
 
-        if (!done)
-            done = maybeDrawLine("");
-        if (!done)
-            done = maybeDrawLine("Non-Priority Riders", true);
-
-        curr = Simulation.riderList.head;
-        while (!done && curr !== null)
+        if (activeListSubTab === "all")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
-            if (done)
-                break;
+            if (!done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Expired Riders", true);
 
-            if (curr.amenitiesRequired.length > 0)
-                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
-            else
-                done = maybeDrawLine(curr.passengers + " people");
+            expiredCurr = Simulation.dispatchEngine.expiredList.tail;
+            while (!done && expiredCurr !== null)
+            {
+                const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
+                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                if (done)
+                    break;
 
-            curr = curr.next;
+                if (expiredRider.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(expiredRider.passengers + " people, " + expiredRider.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(expiredRider.passengers + " people");
+
+                expiredCurr = expiredCurr.prev;
+            }
+        }
+
+        if (activeListSubTab === "expired")
+        {
+            done = maybeDrawLine("Expired Riders", true);
+            expiredCurr = Simulation.dispatchEngine.expiredList.tail;
+            while (!done && expiredCurr !== null)
+            {
+                const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
+                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                if (done)
+                    break;
+
+                if (expiredRider.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(expiredRider.passengers + " people, " + expiredRider.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(expiredRider.passengers + " people");
+
+                expiredCurr = expiredCurr.prev;
+            }
         }
     }
-    else
+    else if (activeStatsTab === "events")
     {
+        let done = maybeDrawLine("Events:", true);
         const eventLogList = Simulation.dispatchEngine.eventLog;
-        if (!eventLogList || eventLogList.size === 0)
+        if (!done && (!eventLogList || eventLogList.size === 0))
             maybeDrawLine("No events yet");
-        else
+        else if (!done)
         {
             let currEvent = eventLogList.tail;
             while (currEvent !== null)
@@ -457,13 +584,17 @@ function displayStats()
             }
         }
     }
+    else
+    {
+        // Settings tab is controlled by buttons above.
+    }
 
     ctx.restore();
 
     if (maxScroll > 0)
     {
         const trackX = canvas.width - 10;
-        const trackY = statsViewportTop;
+        const trackY = viewportTop;
         const trackHeight = statsViewportHeight;
         const thumbHeight = Math.max(30, (statsViewportHeight / statsContentHeight) * trackHeight);
         const thumbY = trackY + (activeScrollY / maxScroll) * (trackHeight - thumbHeight);
@@ -481,10 +612,15 @@ function onStatsWheel(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
+    let viewportTop = statsViewportTop;
+    if (activeStatsTab === "list")
+        viewportTop = listViewportTop;
+    else if (activeStatsTab === "events")
+        viewportTop = eventsViewportTop;
+    const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
 
-    if (mouseX < statsPanelX || mouseY < statsViewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
+    if (mouseX < statsPanelX || mouseY < viewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
         return;
 
     statsScrollByTab[activeStatsTab] += Math.sign(event.deltaY) * statsLineHeight;
@@ -497,57 +633,92 @@ function onStatsTabClick(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const tabX = statsPanelX + statsPadding;
-    const listTabX = tabX;
-    const eventsTabX = listTabX + listTabWidth + statsTabGap;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
 
     if (mouseY < statsTabY || mouseY > statsTabY + statsTabHeight)
         return;
 
-    if (mouseX >= listTabX && mouseX <= listTabX + listTabWidth)
+    if (mouseX >= listTabX && mouseX <= listTabX + tabWidth)
     {
         activeStatsTab = "list";
         return;
     }
 
-    if (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth)
+    if (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth)
+    {
         activeStatsTab = "events";
+        return;
+    }
+
+    if (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)
+        activeStatsTab = "settings";
 }
 
-function drawPauseButton()
+function drawListSubTabs()
+{
+    const layout = getListSubTabLayout();
+    let tabX = layout.startX;
+    ctx.font = "11px serif";
+
+    for (let i = 0; i < layout.subTabs.length; i++)
+    {
+        const tab = layout.subTabs[i];
+        const label = (layout.tabWidth < 56 && tab.compactLabel) ? tab.compactLabel : tab.label;
+        const isActive = activeListSubTab === tab.id;
+        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
+        ctx.fillRect(tabX, listSubTabY, layout.tabWidth, listSubTabHeight);
+        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
+        ctx.fillText(label, tabX + 5, listSubTabY + 14);
+        tabX += layout.tabWidth + listSubTabGap;
+    }
+}
+
+function drawPauseButton(drawY)
 {
     const buttonX = statsPanelX + statsPadding;
     const label = Simulation.pause === 1 ? "Pause" : "Resume";
     ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight);
+    ctx.fillRect(buttonX, drawY, pauseButtonWidth, pauseButtonHeight);
     ctx.fillStyle = "#ffffff";
     ctx.font = "14px serif";
-    ctx.fillText(label, buttonX + 24, pauseButtonY + 14);
+    ctx.fillText(label, buttonX + 24, drawY + 14);
 }
 
-function drawSurgeButton()
+function drawSurgeButton(drawY)
 {
-    const buttonX = statsPanelX + 150;
+    const buttonX = statsPanelX + statsPadding;
     ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, surgeButtonY, surgeButtonWidth, surgeButtonHeight);
+    ctx.fillRect(buttonX, drawY, surgeButtonWidth, surgeButtonHeight);
     ctx.fillStyle = "#ffffff";
     ctx.font = "13px serif";
-    ctx.fillText("Surge +10", buttonX + 8, surgeButtonY + 14);
+    ctx.fillText("Surge +10", buttonX + 8, drawY + 14);
 }
 
-function drawTextModeButton()
+function drawTextModeButton(drawY)
 {
     const buttonX = statsPanelX + statsPadding;
     ctx.fillStyle = textOnlyMode ? "#ffffff" : "#4f4f4f";
-    ctx.fillRect(buttonX, textModeButtonY, textModeButtonWidth, textModeButtonHeight);
+    ctx.fillRect(buttonX, drawY, textModeButtonWidth, textModeButtonHeight);
     ctx.fillStyle = textOnlyMode ? "#1e1e1e" : "#ffffff";
     ctx.font = "12px serif";
-    ctx.fillText("Text only mode", buttonX + 12, textModeButtonY + 14);
+    ctx.fillText("Text only mode", buttonX + 12, drawY + 14);
 }
 
-function drawSpeedButtons()
+function getSpeedButtonsStartX(tab)
 {
-    const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
+    if (tab === "settings")
+        return statsPanelX + statsPadding + pauseButtonWidth + 6;
+    return statsPanelX + statsPadding + pauseButtonWidth + 6;
+}
+
+function drawSpeedButtons(tab)
+{
+    const startX = getSpeedButtonsStartX(tab);
+    const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
     const labels = ["0.5X", "1X", "2X", "10X"];
     ctx.font = "12px serif";
 
@@ -557,16 +728,43 @@ function drawSpeedButtons()
         if (speedMultipliers[i] === activeSpeedMultiplier)
         {
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
             ctx.fillStyle = "#1e1e1e";
         }
         else
         {
             ctx.fillStyle = "#4f4f4f";
-            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
             ctx.fillStyle = "#ffffff";
         }
-        ctx.fillText(labels[i], buttonX + 6, pauseButtonY + 14);
+        ctx.fillText(labels[i], buttonX + 6, drawY + 14);
+    }
+}
+
+function drawGridSizeButtons()
+{
+    const startX = statsPanelX + statsPadding;
+    let buttonX = startX;
+    ctx.font = "12px serif";
+
+    for (let i = 0; i < gridSizes.length; i++)
+    {
+        const buttonWidth = gridButtonWidth;
+        if (size === gridSizes[i])
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+
+        ctx.fillText(gridLabels[i], buttonX + 6, gridButtonY + 14);
+        buttonX += buttonWidth + gridButtonGap;
     }
 }
 
@@ -575,50 +773,122 @@ function onStatsPanelMouseDown(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
+    const inTabRow = mouseY >= statsTabY && mouseY <= statsTabY + statsTabHeight;
+
+    if (inTabRow &&
+        ((mouseX >= listTabX && mouseX <= listTabX + tabWidth) ||
+        (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth) ||
+        (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)))
+    {
+        onStatsTabClick(event);
+        return;
+    }
+
     const buttonX = statsPanelX + statsPadding;
-    const surgeButtonX = statsPanelX + 150;
+    const surgeButtonX = statsPanelX + statsPadding;
     const textModeButtonX = statsPanelX + statsPadding;
-    const speedStartX = buttonX + pauseButtonWidth + 6;
+    const settingsPauseButtonX = statsPanelX + statsPadding;
+    const speedStartXList = getSpeedButtonsStartX("list");
+    const speedStartXSettings = getSpeedButtonsStartX("settings");
 
-    if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
+    if (activeStatsTab === "list")
     {
-        for (let i = 0; i < 10; i++)
+        if (mouseY >= listSubTabY && mouseY <= listSubTabY + listSubTabHeight)
         {
-            spawnRider(riderLength);
-            riderLength += 1;
-        }
-        return;
-    }
-
-    if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= textModeButtonY && mouseY <= textModeButtonY + textModeButtonHeight)
-    {
-        textOnlyMode = !textOnlyMode;
-        statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
-        canvas.width = textOnlyMode ? 420 : width + 275;
-        return;
-    }
-
-    if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
-    {
-        Simulation.pause = Simulation.pause === 1 ? 0 : 1;
-        return;
-    }
-
-    if (mouseY >= pauseButtonY && mouseY <= pauseButtonY + speedButtonHeight)
-    {
-        for (let i = 0; i < speedMultipliers.length; i++)
-        {
-            const speedX = speedStartX + i * (speedButtonWidth + speedButtonGap);
-            if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+            const subLayout = getListSubTabLayout();
+            let subTabX = subLayout.startX;
+            for (let i = 0; i < subLayout.subTabs.length; i++)
             {
-                activeSpeedMultiplier = speedMultipliers[i];
-                Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
-                return;
+                if (mouseX >= subTabX && mouseX <= subTabX + subLayout.tabWidth)
+                {
+                    activeListSubTab = subLayout.subTabs[i].id;
+                    statsScrollByTab.list = 0;
+                    return;
+                }
+                subTabX += subLayout.tabWidth + listSubTabGap;
+            }
+        }
+
+        if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
+        {
+            Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            return;
+        }
+
+        if (mouseY >= pauseButtonY && mouseY <= pauseButtonY + speedButtonHeight)
+        {
+            for (let i = 0; i < speedMultipliers.length; i++)
+            {
+                const speedX = speedStartXList + i * (speedButtonWidth + speedButtonGap);
+                if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+                {
+                    activeSpeedMultiplier = speedMultipliers[i];
+                    Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+                    return;
+                }
             }
         }
     }
+    else if (activeStatsTab === "settings")
+    {
+        if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= settingsSurgeButtonY && mouseY <= settingsSurgeButtonY + surgeButtonHeight)
+        {
+            for (let i = 0; i < 10; i++)
+            {
+                spawnRider(riderLength);
+                riderLength += 1;
+            }
+            return;
+        }
 
-    onStatsTabClick(event);
+        if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= settingsTextModeButtonY && mouseY <= settingsTextModeButtonY + textModeButtonHeight)
+        {
+            textOnlyMode = !textOnlyMode;
+            statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
+            canvas.width = textOnlyMode ? 420 : width + 275;
+            return;
+        }
+
+        if (mouseX >= settingsPauseButtonX && mouseX <= settingsPauseButtonX + pauseButtonWidth && mouseY >= settingsControlY && mouseY <= settingsControlY + pauseButtonHeight)
+        {
+            Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            return;
+        }
+
+        if (mouseY >= settingsControlY && mouseY <= settingsControlY + speedButtonHeight)
+        {
+            for (let i = 0; i < speedMultipliers.length; i++)
+            {
+                const speedX = speedStartXSettings + i * (speedButtonWidth + speedButtonGap);
+                if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+                {
+                    activeSpeedMultiplier = speedMultipliers[i];
+                    Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+                    return;
+                }
+            }
+        }
+
+        if (mouseY >= gridButtonY && mouseY <= gridButtonY + speedButtonHeight)
+        {
+            let gridX = statsPanelX + statsPadding;
+            for (let i = 0; i < gridSizes.length; i++)
+            {
+                const buttonWidth = gridButtonWidth;
+                if (mouseX >= gridX && mouseX <= gridX + buttonWidth)
+                {
+                    size = gridSizes[i];
+                    return;
+                }
+                gridX += buttonWidth + gridButtonGap;
+            }
+        }
+    }
 }
 //AI IMPLEMENTATION DONE ^
 function drawRoute()
