@@ -183,11 +183,14 @@ function getCount()
 function spawnDriver(id)
 {
 
-    let location = [0, 0];
-    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
+    let location;
+    do {
         location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
 
-    let capacity = Math.floor(Math.random() * 5) + 3;
+    } while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size);
+
+    //let capacity = Math.floor(Math.random() * 5) + 3;
+    let capacity = getCapacity();
 
     let amenitiesAvailable = [];
     for (let i = 0; i < amenities.length; i++)
@@ -199,6 +202,18 @@ function spawnDriver(id)
     let driver = new Driver(id, location, capacity, amenitiesAvailable);
 
     Simulation.addDriver(driver);
+}
+
+function getCapacity()
+{
+ let chance = Math.random();
+    if (chance < 0.60)
+        return 5;
+    if (chance < 0.80)
+        return 2;
+    if (chance < 0.90)
+        return 7;
+    return 10;
 }
 
 function drawDrivers()
