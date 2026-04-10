@@ -41,6 +41,7 @@ const gridButtonWidth = 34;
 const gridSizes = [5, 10, 20, 40, 80];
 const gridLabels = ["5", "10", "20", "40", "80"];
 const statsViewportTop = 110;
+const eventsViewportTop = 92;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
 let activeStatsTab = "list";
@@ -366,7 +367,8 @@ function displayStats()
         drawGridSizeButtons();
     }
 
-    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
+    const viewportTop = (activeStatsTab === "events") ? eventsViewportTop : statsViewportTop;
+    const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
     if (activeStatsTab === "list")
     {
         const totalListLines = 5 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size);
@@ -389,7 +391,7 @@ function displayStats()
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(statsPanelX, statsViewportTop, canvas.width - statsPanelX, statsViewportHeight);
+    ctx.rect(statsPanelX, viewportTop, canvas.width - statsPanelX, statsViewportHeight);
     ctx.clip();
     ctx.fillStyle = "#ffffff";
 
@@ -399,7 +401,7 @@ function displayStats()
             ctx.font = sectionFont;
         else
             ctx.font = normalFont;
-        const y = statsViewportTop + statsLineHeight - activeScrollY + lineIndex * statsLineHeight;
+        const y = viewportTop + statsLineHeight - activeScrollY + lineIndex * statsLineHeight;
         ctx.fillText(text, statsPanelX + statsPadding, y);
     };
 
@@ -477,8 +479,6 @@ function displayStats()
     else if (activeStatsTab === "events")
     {
         let done = maybeDrawLine("Events:", true);
-        if (!done)
-            done = maybeDrawLine("");
         const eventLogList = Simulation.dispatchEngine.eventLog;
         if (!done && (!eventLogList || eventLogList.size === 0))
             maybeDrawLine("No events yet");
@@ -505,7 +505,7 @@ function displayStats()
     if (maxScroll > 0)
     {
         const trackX = canvas.width - 10;
-        const trackY = statsViewportTop;
+        const trackY = viewportTop;
         const trackHeight = statsViewportHeight;
         const thumbHeight = Math.max(30, (statsViewportHeight / statsContentHeight) * trackHeight);
         const thumbY = trackY + (activeScrollY / maxScroll) * (trackHeight - thumbHeight);
@@ -523,10 +523,11 @@ function onStatsWheel(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
+    const viewportTop = (activeStatsTab === "events") ? eventsViewportTop : statsViewportTop;
+    const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
 
-    if (mouseX < statsPanelX || mouseY < statsViewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
+    if (mouseX < statsPanelX || mouseY < viewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
         return;
 
     statsScrollByTab[activeStatsTab] += Math.sign(event.deltaY) * statsLineHeight;
