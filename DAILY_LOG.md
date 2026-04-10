@@ -64,3 +64,6 @@ Alistair - Worked on priority list. Cleaned up code + added driver payment after
 
 April 9 2026:
 Alistair - Added a button for text only mode. Switched event log to use a linked list instead. switched distance calculations to use mahnhatten formula instead
+
+April 10 2026:
+Alistair - Added settings tab for organization. Added grid size changing buttons.
