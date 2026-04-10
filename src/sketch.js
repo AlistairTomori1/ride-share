@@ -22,6 +22,7 @@ const statsTabHeight = 28;
 const statsTabGap = 6;
 const listTabWidth = 165;
 const eventsTabWidth = 70;
+const settingsTabWidth = 85;
 const statsHeaderY = 80;
 const surgeButtonY = statsHeaderY - 14;
 const surgeButtonWidth = 74;
@@ -36,11 +37,18 @@ const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
 const speedMultipliers = [0.5, 1, 2, 10];
+const settingsSpeedY = pauseButtonY;
+const gridButtonY = settingsSpeedY + 28;
+const gridButtonGap = 4;
+const gridDefaultButtonWidth = 90;
+const gridButtonWidth = 34;
+const gridSizes = [40, 80, 20, 10, 5];
+const gridLabels = ["Default(40)", "80", "20", "10", "5"];
 const statsViewportTop = 110;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
 let activeStatsTab = "list";
-let statsScrollByTab = { list: 0, events: 0 };
+let statsScrollByTab = { list: 0, events: 0, settings: 0 };
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
@@ -298,40 +306,37 @@ function displayStats()
     const tabX = statsPanelX + statsPadding;
     const listTabX = tabX;
     const eventsTabX = listTabX + listTabWidth + statsTabGap;
+    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
+
+    const drawTab = (x, w, label, isActive) =>
+    {
+        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
+        ctx.fillRect(x, statsTabY, w, statsTabHeight);
+        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
+        ctx.fillText(label, x + 10, statsTabY + 19);
+    };
 
     ctx.font = tabFont;
-    if (activeStatsTab === "list")
-    {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
-        ctx.fillStyle = "#1e1e1e";
-        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
-
-        ctx.fillStyle = "#4f4f4f";
-        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
-    }
-    else
-    {
-        ctx.fillStyle = "#4f4f4f";
-        ctx.fillRect(listTabX, statsTabY, listTabWidth, statsTabHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText("Driver/Rider List", listTabX + 10, statsTabY + 19);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(eventsTabX, statsTabY, eventsTabWidth, statsTabHeight);
-        ctx.fillStyle = "#1e1e1e";
-        ctx.fillText("Events", eventsTabX + 10, statsTabY + 19);
-    }
+    drawTab(listTabX, listTabWidth, "Driver/Rider List", activeStatsTab === "list");
+    drawTab(eventsTabX, eventsTabWidth, "Events", activeStatsTab === "events");
+    drawTab(settingsTabX, settingsTabWidth, "Settings", activeStatsTab === "settings");
 
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
     ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
-    drawSurgeButton();
-    drawTextModeButton();
-    drawPauseButton();
-    drawSpeedButtons();
+
+    if (activeStatsTab === "list")
+    {
+        drawPauseButton();
+        drawSpeedButtons("list");
+    }
+    else if (activeStatsTab === "settings")
+    {
+        drawTextModeButton();
+        drawSurgeButton();
+        drawSpeedButtons("settings");
+        drawGridSizeButtons();
+    }
 
     const statsViewportHeight = canvas.height - statsViewportTop - statsViewportBottomPadding;
     if (activeStatsTab === "list")
@@ -339,11 +344,13 @@ function displayStats()
         const totalListLines = 5 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size);
         statsContentHeight = totalListLines * statsLineHeight;
     }
-    else
+    else if (activeStatsTab === "events")
     {
         const eventCount = Simulation.dispatchEngine.eventLog.size;
         statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
+    else
+        statsContentHeight = 8 * statsLineHeight;
 
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
     statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
@@ -439,7 +446,7 @@ function displayStats()
             curr = curr.next;
         }
     }
-    else
+    else if (activeStatsTab === "events")
     {
         const eventLogList = Simulation.dispatchEngine.eventLog;
         if (!eventLogList || eventLogList.size === 0)
@@ -456,6 +463,15 @@ function displayStats()
                 currEvent = currEvent.prev;
             }
         }
+    }
+    else
+    {
+        maybeDrawLine("Settings", true);
+        maybeDrawLine("Use buttons above to change simulation behavior.");
+        maybeDrawLine("Pause + speed buttons are also shown on Driver/Rider List.");
+        maybeDrawLine("Current text mode: " + (textOnlyMode ? "ON" : "OFF"));
+        maybeDrawLine("Current speed: " + activeSpeedMultiplier + "X");
+        maybeDrawLine("Current grid size: " + size);
     }
 
     ctx.restore();
@@ -500,6 +516,7 @@ function onStatsTabClick(event)
     const tabX = statsPanelX + statsPadding;
     const listTabX = tabX;
     const eventsTabX = listTabX + listTabWidth + statsTabGap;
+    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
 
     if (mouseY < statsTabY || mouseY > statsTabY + statsTabHeight)
         return;
@@ -511,7 +528,13 @@ function onStatsTabClick(event)
     }
 
     if (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth)
+    {
         activeStatsTab = "events";
+        return;
+    }
+
+    if (mouseX >= settingsTabX && mouseX <= settingsTabX + settingsTabWidth)
+        activeStatsTab = "settings";
 }
 
 function drawPauseButton()
@@ -545,9 +568,17 @@ function drawTextModeButton()
     ctx.fillText("Text only mode", buttonX + 12, textModeButtonY + 14);
 }
 
-function drawSpeedButtons()
+function getSpeedButtonsStartX(tab)
 {
-    const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
+    if (tab === "settings")
+        return statsPanelX + statsPadding;
+    return statsPanelX + statsPadding + pauseButtonWidth + 6;
+}
+
+function drawSpeedButtons(tab)
+{
+    const startX = getSpeedButtonsStartX(tab);
+    const drawY = (tab === "settings") ? settingsSpeedY : pauseButtonY;
     const labels = ["0.5X", "1X", "2X", "10X"];
     ctx.font = "12px serif";
 
@@ -557,16 +588,43 @@ function drawSpeedButtons()
         if (speedMultipliers[i] === activeSpeedMultiplier)
         {
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
             ctx.fillStyle = "#1e1e1e";
         }
         else
         {
             ctx.fillStyle = "#4f4f4f";
-            ctx.fillRect(buttonX, pauseButtonY, speedButtonWidth, speedButtonHeight);
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
             ctx.fillStyle = "#ffffff";
         }
-        ctx.fillText(labels[i], buttonX + 6, pauseButtonY + 14);
+        ctx.fillText(labels[i], buttonX + 6, drawY + 14);
+    }
+}
+
+function drawGridSizeButtons()
+{
+    const startX = statsPanelX + statsPadding;
+    let buttonX = startX;
+    ctx.font = "12px serif";
+
+    for (let i = 0; i < gridSizes.length; i++)
+    {
+        const buttonWidth = (i === 0) ? gridDefaultButtonWidth : gridButtonWidth;
+        if (size === gridSizes[i])
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+
+        ctx.fillText(gridLabels[i], buttonX + 6, gridButtonY + 14);
+        buttonX += buttonWidth + gridButtonGap;
     }
 }
 
@@ -575,50 +633,98 @@ function onStatsPanelMouseDown(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
+    const tabX = statsPanelX + statsPadding;
+    const listTabX = tabX;
+    const eventsTabX = listTabX + listTabWidth + statsTabGap;
+    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
+    const inTabRow = mouseY >= statsTabY && mouseY <= statsTabY + statsTabHeight;
+
+    if (inTabRow &&
+        ((mouseX >= listTabX && mouseX <= listTabX + listTabWidth) ||
+        (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth) ||
+        (mouseX >= settingsTabX && mouseX <= settingsTabX + settingsTabWidth)))
+    {
+        onStatsTabClick(event);
+        return;
+    }
+
     const buttonX = statsPanelX + statsPadding;
     const surgeButtonX = statsPanelX + 150;
     const textModeButtonX = statsPanelX + statsPadding;
-    const speedStartX = buttonX + pauseButtonWidth + 6;
+    const speedStartXList = getSpeedButtonsStartX("list");
+    const speedStartXSettings = getSpeedButtonsStartX("settings");
 
-    if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
+    if (activeStatsTab === "list")
     {
-        for (let i = 0; i < 10; i++)
+        if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
         {
-            spawnRider(riderLength);
-            riderLength += 1;
+            Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            return;
         }
-        return;
-    }
 
-    if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= textModeButtonY && mouseY <= textModeButtonY + textModeButtonHeight)
-    {
-        textOnlyMode = !textOnlyMode;
-        statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
-        canvas.width = textOnlyMode ? 420 : width + 275;
-        return;
-    }
-
-    if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
-    {
-        Simulation.pause = Simulation.pause === 1 ? 0 : 1;
-        return;
-    }
-
-    if (mouseY >= pauseButtonY && mouseY <= pauseButtonY + speedButtonHeight)
-    {
-        for (let i = 0; i < speedMultipliers.length; i++)
+        if (mouseY >= pauseButtonY && mouseY <= pauseButtonY + speedButtonHeight)
         {
-            const speedX = speedStartX + i * (speedButtonWidth + speedButtonGap);
-            if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+            for (let i = 0; i < speedMultipliers.length; i++)
             {
-                activeSpeedMultiplier = speedMultipliers[i];
-                Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
-                return;
+                const speedX = speedStartXList + i * (speedButtonWidth + speedButtonGap);
+                if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+                {
+                    activeSpeedMultiplier = speedMultipliers[i];
+                    Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+                    return;
+                }
             }
         }
     }
+    else if (activeStatsTab === "settings")
+    {
+        if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
+        {
+            for (let i = 0; i < 10; i++)
+            {
+                spawnRider(riderLength);
+                riderLength += 1;
+            }
+            return;
+        }
 
-    onStatsTabClick(event);
+        if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= textModeButtonY && mouseY <= textModeButtonY + textModeButtonHeight)
+        {
+            textOnlyMode = !textOnlyMode;
+            statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
+            canvas.width = textOnlyMode ? 420 : width + 275;
+            return;
+        }
+
+        if (mouseY >= settingsSpeedY && mouseY <= settingsSpeedY + speedButtonHeight)
+        {
+            for (let i = 0; i < speedMultipliers.length; i++)
+            {
+                const speedX = speedStartXSettings + i * (speedButtonWidth + speedButtonGap);
+                if (mouseX >= speedX && mouseX <= speedX + speedButtonWidth)
+                {
+                    activeSpeedMultiplier = speedMultipliers[i];
+                    Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+                    return;
+                }
+            }
+        }
+
+        if (mouseY >= gridButtonY && mouseY <= gridButtonY + speedButtonHeight)
+        {
+            let gridX = statsPanelX + statsPadding;
+            for (let i = 0; i < gridSizes.length; i++)
+            {
+                const buttonWidth = (i === 0) ? gridDefaultButtonWidth : gridButtonWidth;
+                if (mouseX >= gridX && mouseX <= gridX + buttonWidth)
+                {
+                    size = gridSizes[i];
+                    return;
+                }
+                gridX += buttonWidth + gridButtonGap;
+            }
+        }
+    }
 }
 //AI IMPLEMENTATION DONE ^
 function drawRoute()
