@@ -32,6 +32,9 @@ const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
 const speedMultipliers = [0.5, 1, 2, 10];
+const listSubTabY = pauseButtonY + speedButtonHeight + 8;
+const listSubTabHeight = 20;
+const listSubTabGap = 4;
 const settingsSurgeButtonY = statsHeaderY + 8;
 const settingsTextModeButtonY = settingsSurgeButtonY + 24;
 const settingsControlY = settingsTextModeButtonY + 24;
@@ -41,11 +44,13 @@ const gridButtonWidth = 34;
 const gridSizes = [5, 10, 20, 40, 80];
 const gridLabels = ["5", "10", "20", "40", "80"];
 const statsViewportTop = 110;
+const listViewportTop = listSubTabY + listSubTabHeight + 8;
 const eventsViewportTop = 92;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
 let activeStatsTab = "list";
 let statsScrollByTab = { list: 0, events: 0, settings: 0 };
+let activeListSubTab = "all";
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
@@ -324,8 +329,27 @@ function getStatsTabLayout()
     return { tabWidth, listTabX, eventsTabX, settingsTabX, listLabel };
 }
 
+function getListSubTabLayout()
+{
+    const subTabs = [
+        { id: "all", label: "All" },
+        { id: "drivers", label: "Drivers" },
+        { id: "riders", label: "Riders" },
+        { id: "expired", label: "Expired" }
+    ];
+
+    const startX = statsPanelX + statsPadding;
+    const availableWidth = canvas.width - startX - statsPadding;
+    const tabWidth = Math.floor((availableWidth - ((subTabs.length - 1) * listSubTabGap)) / subTabs.length);
+
+    return { subTabs, startX, tabWidth };
+}
+
 function displayStats()
 {
+    if (!["all", "drivers", "riders", "expired"].includes(activeListSubTab))
+        activeListSubTab = "all";
+
     const normalFont = "16px serif";
     const sectionFont = "bold 20px serif";
     const tabFont = "13px serif";
@@ -357,6 +381,7 @@ function displayStats()
     {
         drawPauseButton(pauseButtonY);
         drawSpeedButtons("list");
+        drawListSubTabs();
     }
     else if (activeStatsTab === "settings")
     {
@@ -367,12 +392,22 @@ function displayStats()
         drawGridSizeButtons();
     }
 
-    const viewportTop = (activeStatsTab === "events") ? eventsViewportTop : statsViewportTop;
+    let viewportTop = statsViewportTop;
+    if (activeStatsTab === "list")
+        viewportTop = listViewportTop;
+    else if (activeStatsTab === "events")
+        viewportTop = eventsViewportTop;
     const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
     if (activeStatsTab === "list")
     {
-        const totalListLines = 5 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size);
-        statsContentHeight = totalListLines * statsLineHeight;
+        if (activeListSubTab === "all")
+            statsContentHeight = (7 + 2 * (Simulation.driverList.size + Simulation.priorityList.size + Simulation.riderList.size + Simulation.dispatchEngine.expiredList.size)) * statsLineHeight;
+        else if (activeListSubTab === "drivers")
+            statsContentHeight = Math.max(1, (1 + 2 * Simulation.driverList.size) * statsLineHeight);
+        else if (activeListSubTab === "riders")
+            statsContentHeight = Math.max(1, (3 + 2 * (Simulation.priorityList.size + Simulation.riderList.size)) * statsLineHeight);
+        else if (activeListSubTab === "expired")
+            statsContentHeight = Math.max(1, (1 + 2 * Simulation.dispatchEngine.expiredList.size) * statsLineHeight);
     }
     else if (activeStatsTab === "events")
     {
@@ -420,60 +455,114 @@ function displayStats()
 
     if (activeStatsTab === "list")
     {
-        let done = maybeDrawLine("Drivers", true);
-        let curr = Simulation.driverList.head;
-        while (!done && curr !== null)
+        let done = false;
+        let curr = null;
+        let expiredCurr = null;
+
+        if (activeListSubTab === "all" || activeListSubTab === "drivers")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
-            if (done)
-                break;
+            done = maybeDrawLine("Drivers", true);
+            curr = Simulation.driverList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
+                if (done)
+                    break;
 
-            if (curr.amenities.length > 0)
-                done = maybeDrawLine(curr.capacity + " seats, has: " + curr.amenities);
-            else
-                done = maybeDrawLine(curr.capacity + " seats");
+                if (curr.amenities.length > 0)
+                    done = maybeDrawLine(curr.capacity + " seats, has: " + curr.amenities);
+                else
+                    done = maybeDrawLine(curr.capacity + " seats");
 
-            curr = curr.next;
+                curr = curr.next;
+            }
         }
 
-        if (!done)
-            done = maybeDrawLine("");
-        if (!done)
-            done = maybeDrawLine("Priority Riders", true);
-
-        curr = Simulation.priorityList.head;
-        while (!done && curr !== null)
+        if (activeListSubTab === "all" || activeListSubTab === "riders")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
-            if (done)
-                break;
+            if (activeListSubTab === "all" && !done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Priority Riders", true);
 
-            if (curr.amenitiesRequired.length > 0)
-                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
-            else
-                done = maybeDrawLine(curr.passengers + " people");
+            curr = Simulation.priorityList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                if (done)
+                    break;
 
-            curr = curr.next;
+                if (curr.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(curr.passengers + " people");
+
+                curr = curr.next;
+            }
+
+            if (!done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Non-Priority Riders", true);
+
+            curr = Simulation.riderList.head;
+            while (!done && curr !== null)
+            {
+                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                if (done)
+                    break;
+
+                if (curr.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(curr.passengers + " people");
+
+                curr = curr.next;
+            }
         }
 
-        if (!done)
-            done = maybeDrawLine("");
-        if (!done)
-            done = maybeDrawLine("Non-Priority Riders", true);
-
-        curr = Simulation.riderList.head;
-        while (!done && curr !== null)
+        if (activeListSubTab === "all")
         {
-            done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
-            if (done)
-                break;
+            if (!done)
+                done = maybeDrawLine("");
+            if (!done)
+                done = maybeDrawLine("Expired Riders", true);
 
-            if (curr.amenitiesRequired.length > 0)
-                done = maybeDrawLine(curr.passengers + " people, " + curr.amenitiesRequired + " needed");
-            else
-                done = maybeDrawLine(curr.passengers + " people");
+            expiredCurr = Simulation.dispatchEngine.expiredList.tail;
+            while (!done && expiredCurr !== null)
+            {
+                const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
+                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                if (done)
+                    break;
 
-            curr = curr.next;
+                if (expiredRider.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(expiredRider.passengers + " people, " + expiredRider.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(expiredRider.passengers + " people");
+
+                expiredCurr = expiredCurr.prev;
+            }
+        }
+
+        if (activeListSubTab === "expired")
+        {
+            done = maybeDrawLine("Expired Riders", true);
+            expiredCurr = Simulation.dispatchEngine.expiredList.tail;
+            while (!done && expiredCurr !== null)
+            {
+                const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
+                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                if (done)
+                    break;
+
+                if (expiredRider.amenitiesRequired.length > 0)
+                    done = maybeDrawLine(expiredRider.passengers + " people, " + expiredRider.amenitiesRequired + " needed");
+                else
+                    done = maybeDrawLine(expiredRider.passengers + " people");
+
+                expiredCurr = expiredCurr.prev;
+            }
         }
     }
     else if (activeStatsTab === "events")
@@ -523,7 +612,11 @@ function onStatsWheel(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const viewportTop = (activeStatsTab === "events") ? eventsViewportTop : statsViewportTop;
+    let viewportTop = statsViewportTop;
+    if (activeStatsTab === "list")
+        viewportTop = listViewportTop;
+    else if (activeStatsTab === "events")
+        viewportTop = eventsViewportTop;
     const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
 
@@ -563,6 +656,25 @@ function onStatsTabClick(event)
 
     if (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)
         activeStatsTab = "settings";
+}
+
+function drawListSubTabs()
+{
+    const layout = getListSubTabLayout();
+    let tabX = layout.startX;
+    ctx.font = "11px serif";
+
+    for (let i = 0; i < layout.subTabs.length; i++)
+    {
+        const tab = layout.subTabs[i];
+        const label = (layout.tabWidth < 56 && tab.compactLabel) ? tab.compactLabel : tab.label;
+        const isActive = activeListSubTab === tab.id;
+        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
+        ctx.fillRect(tabX, listSubTabY, layout.tabWidth, listSubTabHeight);
+        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
+        ctx.fillText(label, tabX + 5, listSubTabY + 14);
+        tabX += layout.tabWidth + listSubTabGap;
+    }
 }
 
 function drawPauseButton(drawY)
@@ -686,6 +798,22 @@ function onStatsPanelMouseDown(event)
 
     if (activeStatsTab === "list")
     {
+        if (mouseY >= listSubTabY && mouseY <= listSubTabY + listSubTabHeight)
+        {
+            const subLayout = getListSubTabLayout();
+            let subTabX = subLayout.startX;
+            for (let i = 0; i < subLayout.subTabs.length; i++)
+            {
+                if (mouseX >= subTabX && mouseX <= subTabX + subLayout.tabWidth)
+                {
+                    activeListSubTab = subLayout.subTabs[i].id;
+                    statsScrollByTab.list = 0;
+                    return;
+                }
+                subTabX += subLayout.tabWidth + listSubTabGap;
+            }
+        }
+
         if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
         {
             Simulation.pause = Simulation.pause === 1 ? 0 : 1;

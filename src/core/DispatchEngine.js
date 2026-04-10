@@ -1,6 +1,7 @@
 import Scoring from "../utils/Scoring.js";
 import LinkedList from "../data/LinkedList.js";
 import Event from "../models/Event.js";
+import ExpiredList from "../models/ExpiredList.js";
 export default class DispatchEngine
 {
     constructor(DriverList, RiderList, priorityList, eventLog)
@@ -9,6 +10,7 @@ export default class DispatchEngine
         this.RiderList = RiderList;
         this.priorityList = priorityList;
         this.eventLog = eventLog;
+        this.expiredList = new LinkedList();
         this.scoring = new Scoring();
         this.totalProfits = 0;
         this.surgeMultiplier = 1;
@@ -152,6 +154,7 @@ export default class DispatchEngine
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
+                    this.trackExpiredRider(rider);
                     this.waitingCount--;
                     let event = new Event("Rider " + rider.id + " has been expired");
                     this.eventLog.addLink(event);
@@ -174,6 +177,7 @@ export default class DispatchEngine
                 if (rider.waitTimer <= 0)
                 {
                     rider.state = "EXPIRED";
+                    this.trackExpiredRider(rider);
                     this.waitingCount--;
                     let event = new Event("Rider " + rider.id + " has been expired");
                     this.eventLog.addLink(event);
@@ -188,6 +192,13 @@ export default class DispatchEngine
     {
         let baseProfit = Math.floor(rider.cost / 10);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
+    }
+
+    trackExpiredRider(rider)
+    {
+        this.expiredList.addLink(new ExpiredList(rider));
+        if (this.expiredList.size > 200)
+            this.expiredList.remove(this.expiredList.head);
     }
 
 }

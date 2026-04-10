@@ -205,7 +205,7 @@ export default class SimulationController
 
     expireOldEvents()
     {
-        while(this.dispatchEngine.eventLog.size > 1000)
+        while(this.dispatchEngine.eventLog.size > 200)
             this.dispatchEngine.eventLog.remove(this.dispatchEngine.eventLog.head);
     }
 }
