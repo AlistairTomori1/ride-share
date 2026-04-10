@@ -66,4 +66,4 @@ April 9 2026:
 Alistair - Added a button for text only mode. Switched event log to use a linked list instead. switched distance calculations to use mahnhatten formula instead
 
 April 10 2026:
-Alistair - Added settings tab for organization. Added grid size changing buttons.
+Alistair - Added settings tab for organization. Added grid size changing buttons. Added expired rider list. Added sub-tabs in the list view section to organize what you see.
