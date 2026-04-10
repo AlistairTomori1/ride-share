@@ -20,16 +20,11 @@ const statsPadding = 10;
 const statsTabY = 12;
 const statsTabHeight = 28;
 const statsTabGap = 6;
-const listTabWidth = 165;
-const eventsTabWidth = 70;
-const settingsTabWidth = 85;
 const statsHeaderY = 80;
-const surgeButtonY = statsHeaderY - 14;
 const surgeButtonWidth = 74;
 const surgeButtonHeight = 20;
 const textModeButtonWidth = 120;
 const textModeButtonHeight = 20;
-const textModeButtonY = statsHeaderY - 34;
 const pauseButtonY = statsHeaderY + 8;
 const pauseButtonHeight = 20;
 const pauseButtonWidth = 90;
@@ -37,13 +32,14 @@ const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
 const speedMultipliers = [0.5, 1, 2, 10];
-const settingsSpeedY = pauseButtonY;
-const gridButtonY = settingsSpeedY + 28;
+const settingsSurgeButtonY = statsHeaderY + 8;
+const settingsTextModeButtonY = settingsSurgeButtonY + 24;
+const settingsControlY = settingsTextModeButtonY + 24;
+const gridButtonY = settingsControlY + 28;
 const gridButtonGap = 4;
-const gridDefaultButtonWidth = 90;
 const gridButtonWidth = 34;
-const gridSizes = [40, 80, 20, 10, 5];
-const gridLabels = ["Default(40)", "80", "20", "10", "5"];
+const gridSizes = [5, 10, 20, 40, 80];
+const gridLabels = ["5", "10", "20", "40", "80"];
 const statsViewportTop = 110;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
@@ -133,10 +129,10 @@ function spawnController()
 
 function spawnRider(id)
 {
-    let location = [0, 0];
-    while (location[0] < size-10 || location[1] < size-10 || location[0] > width - size || location[1] > height - size)
-        location = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
-
+    let location;
+    do {
+        location = [size * Math.floor(Math.random() * (width / size)), size * Math.floor(Math.random() * (height / size))];
+    } while (location[0] < size - 10 || location[1] < size - 10 || location[0] > width - size || location[1] > height - size);
     //let passengers = Math.floor(Math.random() * 8) + 1;
     let passengers = getCount();
 
@@ -148,9 +144,10 @@ function spawnRider(id)
             amenitiesRequired.push(amenities[i]);
     }
 
-    let dropOff = [0, 0];
-    while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]))
+    let dropOff;
+    do {
         dropOff = [(size * Math.floor(Math.random() * width/size)), (size * Math.floor(Math.random() * height/size))];
+    } while (dropOff[0] < size-10 || dropOff[1] < size-10 || dropOff[0] > width - size || dropOff[1] > height - size || (dropOff[0] === location[0] && dropOff[1] === location[1]));
 
     let priority = false;
     if (Math.random() < 0.25)
@@ -298,15 +295,30 @@ function drawGrid(size)
     }
 }
 //AI IMPLEMENTED
+function getStatsTabLayout()
+{
+    const tabX = statsPanelX + statsPadding;
+    const availableWidth = canvas.width - tabX - statsPadding;
+    const tabWidth = Math.floor((availableWidth - (2 * statsTabGap)) / 3);
+    const listTabX = tabX;
+    const eventsTabX = listTabX + tabWidth + statsTabGap;
+    const settingsTabX = eventsTabX + tabWidth + statsTabGap;
+    const listLabel = tabWidth < 120 ? "List" : "Driver/Rider List";
+
+    return { tabWidth, listTabX, eventsTabX, settingsTabX, listLabel };
+}
+
 function displayStats()
 {
     const normalFont = "16px serif";
     const sectionFont = "bold 20px serif";
     const tabFont = "13px serif";
-    const tabX = statsPanelX + statsPadding;
-    const listTabX = tabX;
-    const eventsTabX = listTabX + listTabWidth + statsTabGap;
-    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
+    const listLabel = tabLayout.listLabel;
 
     const drawTab = (x, w, label, isActive) =>
     {
@@ -317,9 +329,9 @@ function displayStats()
     };
 
     ctx.font = tabFont;
-    drawTab(listTabX, listTabWidth, "Driver/Rider List", activeStatsTab === "list");
-    drawTab(eventsTabX, eventsTabWidth, "Events", activeStatsTab === "events");
-    drawTab(settingsTabX, settingsTabWidth, "Settings", activeStatsTab === "settings");
+    drawTab(listTabX, tabWidth, listLabel, activeStatsTab === "list");
+    drawTab(eventsTabX, tabWidth, "Events", activeStatsTab === "events");
+    drawTab(settingsTabX, tabWidth, "Settings", activeStatsTab === "settings");
 
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
@@ -327,13 +339,14 @@ function displayStats()
 
     if (activeStatsTab === "list")
     {
-        drawPauseButton();
+        drawPauseButton(pauseButtonY);
         drawSpeedButtons("list");
     }
     else if (activeStatsTab === "settings")
     {
-        drawTextModeButton();
-        drawSurgeButton();
+        drawSurgeButton(settingsSurgeButtonY);
+        drawTextModeButton(settingsTextModeButtonY);
+        drawPauseButton(settingsControlY);
         drawSpeedButtons("settings");
         drawGridSizeButtons();
     }
@@ -350,7 +363,7 @@ function displayStats()
         statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
     else
-        statsContentHeight = 8 * statsLineHeight;
+        statsContentHeight = 0;
 
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
     statsScrollByTab[activeStatsTab] = Math.max(0, Math.min(statsScrollByTab[activeStatsTab], maxScroll));
@@ -367,7 +380,7 @@ function displayStats()
 
     const drawLine = (lineIndex, text, isSection = false) =>
     {
-        if (activeStatsTab === "list" && isSection)
+        if (isSection)
             ctx.font = sectionFont;
         else
             ctx.font = normalFont;
@@ -448,10 +461,13 @@ function displayStats()
     }
     else if (activeStatsTab === "events")
     {
+        let done = maybeDrawLine("Events:", true);
+        if (!done)
+            done = maybeDrawLine("");
         const eventLogList = Simulation.dispatchEngine.eventLog;
-        if (!eventLogList || eventLogList.size === 0)
+        if (!done && (!eventLogList || eventLogList.size === 0))
             maybeDrawLine("No events yet");
-        else
+        else if (!done)
         {
             let currEvent = eventLogList.tail;
             while (currEvent !== null)
@@ -466,12 +482,7 @@ function displayStats()
     }
     else
     {
-        maybeDrawLine("Settings", true);
-        maybeDrawLine("Use buttons above to change simulation behavior.");
-        maybeDrawLine("Pause + speed buttons are also shown on Driver/Rider List.");
-        maybeDrawLine("Current text mode: " + (textOnlyMode ? "ON" : "OFF"));
-        maybeDrawLine("Current speed: " + activeSpeedMultiplier + "X");
-        maybeDrawLine("Current grid size: " + size);
+        // Settings tab is controlled by buttons above.
     }
 
     ctx.restore();
@@ -513,72 +524,73 @@ function onStatsTabClick(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const tabX = statsPanelX + statsPadding;
-    const listTabX = tabX;
-    const eventsTabX = listTabX + listTabWidth + statsTabGap;
-    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
 
     if (mouseY < statsTabY || mouseY > statsTabY + statsTabHeight)
         return;
 
-    if (mouseX >= listTabX && mouseX <= listTabX + listTabWidth)
+    if (mouseX >= listTabX && mouseX <= listTabX + tabWidth)
     {
         activeStatsTab = "list";
         return;
     }
 
-    if (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth)
+    if (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth)
     {
         activeStatsTab = "events";
         return;
     }
 
-    if (mouseX >= settingsTabX && mouseX <= settingsTabX + settingsTabWidth)
+    if (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)
         activeStatsTab = "settings";
 }
 
-function drawPauseButton()
+function drawPauseButton(drawY)
 {
     const buttonX = statsPanelX + statsPadding;
     const label = Simulation.pause === 1 ? "Pause" : "Resume";
     ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight);
+    ctx.fillRect(buttonX, drawY, pauseButtonWidth, pauseButtonHeight);
     ctx.fillStyle = "#ffffff";
     ctx.font = "14px serif";
-    ctx.fillText(label, buttonX + 24, pauseButtonY + 14);
+    ctx.fillText(label, buttonX + 24, drawY + 14);
 }
 
-function drawSurgeButton()
+function drawSurgeButton(drawY)
 {
-    const buttonX = statsPanelX + 150;
+    const buttonX = statsPanelX + statsPadding;
     ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, surgeButtonY, surgeButtonWidth, surgeButtonHeight);
+    ctx.fillRect(buttonX, drawY, surgeButtonWidth, surgeButtonHeight);
     ctx.fillStyle = "#ffffff";
     ctx.font = "13px serif";
-    ctx.fillText("Surge +10", buttonX + 8, surgeButtonY + 14);
+    ctx.fillText("Surge +10", buttonX + 8, drawY + 14);
 }
 
-function drawTextModeButton()
+function drawTextModeButton(drawY)
 {
     const buttonX = statsPanelX + statsPadding;
     ctx.fillStyle = textOnlyMode ? "#ffffff" : "#4f4f4f";
-    ctx.fillRect(buttonX, textModeButtonY, textModeButtonWidth, textModeButtonHeight);
+    ctx.fillRect(buttonX, drawY, textModeButtonWidth, textModeButtonHeight);
     ctx.fillStyle = textOnlyMode ? "#1e1e1e" : "#ffffff";
     ctx.font = "12px serif";
-    ctx.fillText("Text only mode", buttonX + 12, textModeButtonY + 14);
+    ctx.fillText("Text only mode", buttonX + 12, drawY + 14);
 }
 
 function getSpeedButtonsStartX(tab)
 {
     if (tab === "settings")
-        return statsPanelX + statsPadding;
+        return statsPanelX + statsPadding + pauseButtonWidth + 6;
     return statsPanelX + statsPadding + pauseButtonWidth + 6;
 }
 
 function drawSpeedButtons(tab)
 {
     const startX = getSpeedButtonsStartX(tab);
-    const drawY = (tab === "settings") ? settingsSpeedY : pauseButtonY;
+    const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
     const labels = ["0.5X", "1X", "2X", "10X"];
     ctx.font = "12px serif";
 
@@ -609,7 +621,7 @@ function drawGridSizeButtons()
 
     for (let i = 0; i < gridSizes.length; i++)
     {
-        const buttonWidth = (i === 0) ? gridDefaultButtonWidth : gridButtonWidth;
+        const buttonWidth = gridButtonWidth;
         if (size === gridSizes[i])
         {
             ctx.fillStyle = "#ffffff";
@@ -633,24 +645,26 @@ function onStatsPanelMouseDown(event)
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
-    const tabX = statsPanelX + statsPadding;
-    const listTabX = tabX;
-    const eventsTabX = listTabX + listTabWidth + statsTabGap;
-    const settingsTabX = eventsTabX + eventsTabWidth + statsTabGap;
+    const tabLayout = getStatsTabLayout();
+    const listTabX = tabLayout.listTabX;
+    const eventsTabX = tabLayout.eventsTabX;
+    const settingsTabX = tabLayout.settingsTabX;
+    const tabWidth = tabLayout.tabWidth;
     const inTabRow = mouseY >= statsTabY && mouseY <= statsTabY + statsTabHeight;
 
     if (inTabRow &&
-        ((mouseX >= listTabX && mouseX <= listTabX + listTabWidth) ||
-        (mouseX >= eventsTabX && mouseX <= eventsTabX + eventsTabWidth) ||
-        (mouseX >= settingsTabX && mouseX <= settingsTabX + settingsTabWidth)))
+        ((mouseX >= listTabX && mouseX <= listTabX + tabWidth) ||
+        (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth) ||
+        (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)))
     {
         onStatsTabClick(event);
         return;
     }
 
     const buttonX = statsPanelX + statsPadding;
-    const surgeButtonX = statsPanelX + 150;
+    const surgeButtonX = statsPanelX + statsPadding;
     const textModeButtonX = statsPanelX + statsPadding;
+    const settingsPauseButtonX = statsPanelX + statsPadding;
     const speedStartXList = getSpeedButtonsStartX("list");
     const speedStartXSettings = getSpeedButtonsStartX("settings");
 
@@ -678,7 +692,7 @@ function onStatsPanelMouseDown(event)
     }
     else if (activeStatsTab === "settings")
     {
-        if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= surgeButtonY && mouseY <= surgeButtonY + surgeButtonHeight)
+        if (mouseX >= surgeButtonX && mouseX <= surgeButtonX + surgeButtonWidth && mouseY >= settingsSurgeButtonY && mouseY <= settingsSurgeButtonY + surgeButtonHeight)
         {
             for (let i = 0; i < 10; i++)
             {
@@ -688,7 +702,7 @@ function onStatsPanelMouseDown(event)
             return;
         }
 
-        if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= textModeButtonY && mouseY <= textModeButtonY + textModeButtonHeight)
+        if (mouseX >= textModeButtonX && mouseX <= textModeButtonX + textModeButtonWidth && mouseY >= settingsTextModeButtonY && mouseY <= settingsTextModeButtonY + textModeButtonHeight)
         {
             textOnlyMode = !textOnlyMode;
             statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
@@ -696,7 +710,13 @@ function onStatsPanelMouseDown(event)
             return;
         }
 
-        if (mouseY >= settingsSpeedY && mouseY <= settingsSpeedY + speedButtonHeight)
+        if (mouseX >= settingsPauseButtonX && mouseX <= settingsPauseButtonX + pauseButtonWidth && mouseY >= settingsControlY && mouseY <= settingsControlY + pauseButtonHeight)
+        {
+            Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            return;
+        }
+
+        if (mouseY >= settingsControlY && mouseY <= settingsControlY + speedButtonHeight)
         {
             for (let i = 0; i < speedMultipliers.length; i++)
             {
@@ -715,7 +735,7 @@ function onStatsPanelMouseDown(event)
             let gridX = statsPanelX + statsPadding;
             for (let i = 0; i < gridSizes.length; i++)
             {
-                const buttonWidth = (i === 0) ? gridDefaultButtonWidth : gridButtonWidth;
+                const buttonWidth = gridButtonWidth;
                 if (mouseX >= gridX && mouseX <= gridX + buttonWidth)
                 {
                     size = gridSizes[i];
