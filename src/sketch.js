@@ -71,7 +71,7 @@ function setup()
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
-    for (let i = 0; i < 100; i++)
+    for (let i = 0; i < 10; i++)
     {
         spawnDriver(i);
     }
@@ -110,11 +110,11 @@ function draw()
 function spawnController()
 {
     let busyRatio = (Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size;
-    console.log(busyRatio);
+   console.log(busyRatio);
     let waitPerDriver = (Simulation.dispatchEngine.waitingCount) / Simulation.driverList.size;
 
     let rate = Simulation.driverList.size * 0.07;
-    rate += (0.85 - busyRatio) * Simulation.driverList.size * 0.22;
+    rate += (1.55 - busyRatio) * Simulation.driverList.size * 0.22;
     rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 1.2;
 
     if (busyRatio > 0.92)
