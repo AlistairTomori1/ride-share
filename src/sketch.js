@@ -110,11 +110,10 @@ function draw()
 function spawnController()
 {
     let busyRatio = (Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size;
-   console.log(busyRatio);
     let waitPerDriver = (Simulation.dispatchEngine.waitingCount) / Simulation.driverList.size;
 
     let rate = Simulation.driverList.size * 0.07;
-    rate += (1.55 - busyRatio) * Simulation.driverList.size * 0.22;
+    rate += (1.00 - busyRatio) * Simulation.driverList.size * 0.22;
     rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 1.2;
 
     if (busyRatio > 0.92)
@@ -215,7 +214,7 @@ function getCapacity()
  let chance = Math.random();
     if (chance < 0.60)
         return 5;
-    if (chance < 0.80)
+    if (chance < 0.70)
         return 2;
     if (chance < 0.90)
         return 7;
