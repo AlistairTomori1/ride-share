@@ -40,8 +40,8 @@ export default class SimulationController
     }
     tick()
     {
-        this.time++;
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
+        this.time += speedMultiplier;
         this.dispatchEngine.update(speedMultiplier);
         this.moveDrivers();
         this.moveRiders();
