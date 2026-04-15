@@ -70,3 +70,7 @@ Alistair - Added settings tab for organization. Added grid size changing buttons
 
 April 13 2026:
 Alistair - Added Refractoring document.
+
+April 14 2026:
+Alistair - Stage 2 interview.
+James - Stage 2 interview.

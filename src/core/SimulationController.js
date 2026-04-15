@@ -103,7 +103,7 @@ export default class SimulationController
                 {
                     curr.assignedRider.state = "PICKED UP";
                     curr.state = "DROPPING OFF";
-                    let event = new Event("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id);
+                    let event = new Event(curr, curr.assignedRider, "pickup");
 
                     this.dispatchEngine.eventLog.addLink(event);
                 }
@@ -139,7 +139,7 @@ export default class SimulationController
                     {
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
-                        let event = new Event("Driver " + curr.id + " has dropped off rider " + droppedRider.id);
+                        let event = new Event(curr, droppedRider, "dropoff");
                         this.dispatchEngine.eventLog.addLink(event);
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
@@ -198,7 +198,7 @@ export default class SimulationController
         if (nextSurge !== this.dispatchEngine.surgeMultiplier)
         {
             this.dispatchEngine.surgeMultiplier = nextSurge;
-            let event = new Event("Surge updated to " + this.dispatchEngine.surgeMultiplier.toFixed(2) + "x");
+            let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2));
             this.dispatchEngine.eventLog.addLink(event);
         }
     }
