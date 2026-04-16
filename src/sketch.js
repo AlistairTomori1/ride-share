@@ -31,7 +31,7 @@ const pauseButtonWidth = 90;
 const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
-const speedMultipliers = [0.5, 1, 2, 10];
+const speedMultipliers = [0.5, 1, 2, 4];
 const listSubTabY = pauseButtonY + speedButtonHeight + 8;
 const listSubTabHeight = 20;
 const listSubTabGap = 4;
@@ -48,6 +48,7 @@ const listViewportTop = listSubTabY + listSubTabHeight + 8;
 const eventsViewportTop = 92;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
+let lastFrameTime = performance.now();
 let activeStatsTab = "list";
 let statsScrollByTab = { list: 0, events: 0, settings: 0 };
 let activeListSubTab = "all";
@@ -86,7 +87,12 @@ function setup()
 
 function draw()
 {
-    Simulation.runSim();
+
+    const now = performance.now();
+    let deltaSeconds = (now - lastFrameTime) / 1000;
+    deltaSeconds = Math.min(deltaSeconds, 0.1);
+    lastFrameTime = now;
+    Simulation.runSim(deltaSeconds);
 
     ctx.fillStyle = "#282828";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -105,6 +111,7 @@ function draw()
         spawnController()
 
     requestAnimationFrame(draw);
+    
 }
 
 function spawnController()
@@ -112,12 +119,12 @@ function spawnController()
     let busyRatio = (Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size;
     let waitPerDriver = (Simulation.dispatchEngine.waitingCount) / Simulation.driverList.size;
 
-    let rate = Simulation.driverList.size * 0.07;
-    rate += (1.00 - busyRatio) * Simulation.driverList.size * 0.22;
-    rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 1.2;
+    let rate = Simulation.driverList.size * 0.12;
+    rate += (1.00 - busyRatio) * Simulation.driverList.size * 0.36;
+    rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 0.8;
 
-    if (busyRatio > 0.92)
-        rate -= (busyRatio - 0.92) * Simulation.driverList.size * 0.9;
+    if (busyRatio > 0.87)
+        rate -= (busyRatio - 0.87) * Simulation.driverList.size * 0.9;
 
     rate = Math.max(0, Math.min(rate, Simulation.driverList.size * 0.25));
 
@@ -374,7 +381,8 @@ function displayStats()
 
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
-    ctx.fillText("Time since start: " + Math.floor(Simulation.time/60) + "s", statsPanelX + statsPadding, statsHeaderY);
+    const simDate = new Date(Simulation.startDate.getTime() + Simulation.time * 1000)
+    ctx.fillText("Sim time: " + simDate.toLocaleString(), statsPanelX + statsPadding, statsHeaderY);
 
     if (activeStatsTab === "list")
     {
@@ -464,7 +472,7 @@ function displayStats()
             curr = Simulation.driverList.head;
             while (!done && curr !== null)
             {
-                done = maybeDrawLine(curr.location + " " + curr.state + " $" + curr.profits);
+                done = maybeDrawLine("[" + Math.round(curr.location[0]) + ", " + Math.round(curr.location[1]) + "] " + curr.state + " $" + curr.profits);
                 if (done)
                     break;
 
@@ -487,7 +495,7 @@ function displayStats()
             curr = Simulation.priorityList.head;
             while (!done && curr !== null)
             {
-                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                done = maybeDrawLine("[" + Math.round(curr.location[0]) + ", " + Math.round(curr.location[1]) + "] " + curr.state + " " + Math.floor(curr.waitTimer / 60));
                 if (done)
                     break;
 
@@ -507,7 +515,7 @@ function displayStats()
             curr = Simulation.riderList.head;
             while (!done && curr !== null)
             {
-                done = maybeDrawLine(curr.location + " " + curr.state + " " + Math.floor(curr.waitTimer / 60));
+                done = maybeDrawLine("[" + Math.round(curr.location[0]) + ", " + Math.round(curr.location[1]) + "] " + curr.state + " " + Math.floor(curr.waitTimer / 60));
                 if (done)
                     break;
 
@@ -531,7 +539,7 @@ function displayStats()
             while (!done && expiredCurr !== null)
             {
                 const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
-                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                done = maybeDrawLine("[" + Math.round(expiredRider.location[0]) + ", " + Math.round(expiredRider.location[1]) + "] " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
                 if (done)
                     break;
 
@@ -551,7 +559,7 @@ function displayStats()
             while (!done && expiredCurr !== null)
             {
                 const expiredRider = expiredCurr.expired !== undefined ? expiredCurr.expired : expiredCurr;
-                done = maybeDrawLine(expiredRider.location + " " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
+                done = maybeDrawLine("[" + Math.round(expiredRider.location[0]) + ", " + Math.round(expiredRider.location[1]) + "] " + expiredRider.state + " " + Math.floor(expiredRider.waitTimer / 60));
                 if (done)
                     break;
 
@@ -718,7 +726,7 @@ function drawSpeedButtons(tab)
 {
     const startX = getSpeedButtonsStartX(tab);
     const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
-    const labels = ["0.5X", "1X", "2X", "10X"];
+    const labels = ["0.5X", "1X", "2X", "4X"];
     ctx.font = "12px serif";
 
     for (let i = 0; i < labels.length; i++)
@@ -816,6 +824,7 @@ function onStatsPanelMouseDown(event)
         if (mouseX >= buttonX && mouseX <= buttonX + pauseButtonWidth && mouseY >= pauseButtonY && mouseY <= pauseButtonY + pauseButtonHeight)
         {
             Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            lastFrameTime = performance.now();
             return;
         }
 
@@ -856,6 +865,7 @@ function onStatsPanelMouseDown(event)
         if (mouseX >= settingsPauseButtonX && mouseX <= settingsPauseButtonX + pauseButtonWidth && mouseY >= settingsControlY && mouseY <= settingsControlY + pauseButtonHeight)
         {
             Simulation.pause = Simulation.pause === 1 ? 0 : 1;
+            lastFrameTime = performance.now();
             return;
         }
 
