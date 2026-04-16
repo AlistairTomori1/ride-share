@@ -13,6 +13,7 @@ export default class SimulationController
         this.priorityList = new LinkedList();
         this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList, this.eventLog);
         this.time = 0;
+        this.startDate = new Date(2026, 0, 1, 0, 0, 0, 0)
         //normal sim speed is 100
         this.simSpeed = 100;
         this.baseSimSpeed = this.simSpeed;
@@ -38,23 +39,22 @@ export default class SimulationController
             this.dispatchEngine.matchDriverToSingle(rider);
         }
     }
-    tick()
+    tick(deltaSeconds)
     {
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
-        this.time += speedMultiplier;
+        const simSeconds = deltaSeconds * speedMultiplier;
+        this.time += simSeconds;
         this.dispatchEngine.update(speedMultiplier);
-        this.moveDrivers();
+        this.moveDrivers(simSeconds);
         this.moveRiders();
         this.updateSurge();
         this.expireOldEvents();
     }
     
-    runSim()
+    runSim(deltaSeconds)
     {
         if (this.pause == 1)
-            this.tick();
-        else
-            return;
+            this.tick(deltaSeconds);
     }
     //AI implemented 
     moveValueTowards(current, target, step)
@@ -70,10 +70,10 @@ export default class SimulationController
         return Math.abs(current - target) < 0.0001;
     }
     //AI implementaion end ^
-    moveDrivers()
+    moveDrivers(deltaSeconds)
     {
         let curr = this.driverList.head;
-        let speed = this.simSpeed/50;
+        let speed = (this.simSpeed/50) * deltaSeconds * 60;
         while (curr !== null)
         {
             if (curr.state == "PICKING UP")
@@ -103,7 +103,7 @@ export default class SimulationController
                 {
                     curr.assignedRider.state = "PICKED UP";
                     curr.state = "DROPPING OFF";
-                    let event = new Event("Driver " + curr.id + " has picked up rider " + curr.assignedRider.id);
+                    let event = new Event(curr, curr.assignedRider, "pickup");
 
                     this.dispatchEngine.eventLog.addLink(event);
                 }
@@ -139,7 +139,7 @@ export default class SimulationController
                     {
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
-                        let event = new Event("Driver " + curr.id + " has dropped off rider " + droppedRider.id);
+                        let event = new Event(curr, droppedRider, "dropoff");
                         this.dispatchEngine.eventLog.addLink(event);
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
@@ -198,7 +198,7 @@ export default class SimulationController
         if (nextSurge !== this.dispatchEngine.surgeMultiplier)
         {
             this.dispatchEngine.surgeMultiplier = nextSurge;
-            let event = new Event("Surge updated to " + this.dispatchEngine.surgeMultiplier.toFixed(2) + "x");
+            let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2));
             this.dispatchEngine.eventLog.addLink(event);
         }
     }

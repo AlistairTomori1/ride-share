@@ -67,3 +67,10 @@ Alistair - Added a button for text only mode. Switched event log to use a linked
 
 April 10 2026:
 Alistair - Added settings tab for organization. Added grid size changing buttons. Added expired rider list. Added sub-tabs in the list view section to organize what you see.
+
+April 13 2026:
+Alistair - Added Refractoring document.
+
+April 14 2026:
+Alistair - Stage 2 interview.
+James - Stage 2 interview.

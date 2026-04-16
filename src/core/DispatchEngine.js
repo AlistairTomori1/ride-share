@@ -114,7 +114,7 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        let event = new Event("Driver " + driver.id + " has been assigned to rider " + rider.id);
+        let event = new Event(driver, rider, "assigned");
         this.eventLog.addLink(event);
     }
     updateBusyDrivers()
@@ -156,7 +156,8 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event("Rider " + rider.id + " has been expired");
+                    let event = new Event(null, rider, "expire");
+                    console.log("succsess")
                     this.eventLog.addLink(event);
                     this.expireCount++;
                 }
@@ -179,7 +180,7 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event("Rider " + rider.id + " has been expired");
+                    let event = new Event(null, rider, "expire");
                     this.eventLog.addLink(event);
                     this.expireCount++;
                 }
