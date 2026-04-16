@@ -1,13 +1,12 @@
-import Node from "../data/Node.js";
-import DispatchEngine from "../core/DispatchEngine.js";
 export default class Event{
 
-    constructor(driver, rider, type, surge)
+    constructor(driver, rider, type, surge, time)
     {
         this.driver = driver;
         this.rider = rider;
         this.type = type;
         this.surge = surge;
+        this.time = time;
         this.event = this.addEvent();
     }
 

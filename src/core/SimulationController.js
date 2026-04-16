@@ -11,13 +11,43 @@ export default class SimulationController
         this.riderList = new LinkedList();
         this.eventLog = new LinkedList();
         this.priorityList = new LinkedList();
-        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList, this.eventLog);
         this.time = 0;
-        this.startDate = new Date(2026, 0, 1, 0, 0, 0, 0)
+        this.startDate = new Date(2026, 0, 1, 0, 0, 0, 0);
+        this.dispatchEngine = new DispatchEngine(
+            this.driverList,
+            this.riderList,
+            this.priorityList,
+            this.eventLog,
+            () => this.getFormattedSimTime()
+        );
         //normal sim speed is 100
         this.simSpeed = 100;
         this.baseSimSpeed = this.simSpeed;
         this.pause = 1;
+        this.averageWaitTime = 0;
+        this.averageWaitTimeCount = 0;
+        this.totalWaitTime = 0;
+        this.averageExpiredPerHour = 0;
+        this.averageRideTime = 0;
+        this.averageRideTimeCount = 0;
+        this.totalRideTime = 0;
+    }
+
+    getSimDate()
+    {
+        return new Date(this.startDate.getTime() + this.time * 1000);
+    }
+
+    getFormattedSimTime()
+    {
+        return this.getSimDate().toLocaleString([], {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+        });
     }
 
     addDriver(driver)
@@ -42,13 +72,17 @@ export default class SimulationController
     tick(deltaSeconds)
     {
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
-        const simSeconds = deltaSeconds * speedMultiplier;
-        this.time += simSeconds;
+        const clockSeconds = deltaSeconds * speedMultiplier * 60;
+        this.time += clockSeconds;
         this.dispatchEngine.update(speedMultiplier);
-        this.moveDrivers(simSeconds);
+        this.moveDrivers(deltaSeconds);
         this.moveRiders();
         this.updateSurge();
         this.expireOldEvents();
+
+        let simHoursElapsed = this.time / 3600;
+        this.averageExpiredPerHour = this.dispatchEngine.expireCount / simHoursElapsed;
+
     }
     
     runSim(deltaSeconds)
@@ -103,7 +137,12 @@ export default class SimulationController
                 {
                     curr.assignedRider.state = "PICKED UP";
                     curr.state = "DROPPING OFF";
-                    let event = new Event(curr, curr.assignedRider, "pickup");
+                    let event = new Event(curr, curr.assignedRider, "pickup", null, this.getFormattedSimTime());
+                    let waitMinutes = (this.getSimDate() - curr.assignedRider.spawnTime) / 60000;
+                    curr.assignedRider.pickupTime = this.getSimDate();
+                    this.totalWaitTime += waitMinutes;
+                    this.averageWaitTimeCount++;
+                    this.averageWaitTime = this.totalWaitTime / this.averageWaitTimeCount;
 
                     this.dispatchEngine.eventLog.addLink(event);
                 }
@@ -139,8 +178,14 @@ export default class SimulationController
                     {
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
-                        let event = new Event(curr, droppedRider, "dropoff");
+                        let event = new Event(curr, droppedRider, "dropoff", null, this.getFormattedSimTime());
                         this.dispatchEngine.eventLog.addLink(event);
+
+                        let RideMinutes = (this.getSimDate() - curr.assignedRider.pickupTime) / 60000;
+                        this.totalRideTime += RideMinutes;
+                        this.averageRideTimeCount++;
+                        this.averageRideTime = this.totalRideTime / this.averageRideTimeCount;
+
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
                         this.dispatchEngine.totalProfits += tripProfit;
@@ -198,7 +243,7 @@ export default class SimulationController
         if (nextSurge !== this.dispatchEngine.surgeMultiplier)
         {
             this.dispatchEngine.surgeMultiplier = nextSurge;
-            let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2));
+            let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2), this.getFormattedSimTime());
             this.dispatchEngine.eventLog.addLink(event);
         }
     }

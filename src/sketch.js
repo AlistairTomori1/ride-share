@@ -50,7 +50,7 @@ const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
 let lastFrameTime = performance.now();
 let activeStatsTab = "list";
-let statsScrollByTab = { list: 0, events: 0, settings: 0 };
+let statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
 let activeListSubTab = "all";
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
@@ -165,7 +165,9 @@ function spawnRider(id)
     if (Math.random() < 0.25)
         priority = true;
 
-    let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff, priority);
+    let spawnTime = Simulation.getSimDate();
+
+    let request = new RideRequest(id, location, passengers, amenitiesRequired, dropOff, priority, spawnTime);
 
     Simulation.addRider(request);
 }
@@ -326,13 +328,14 @@ function getStatsTabLayout()
 {
     const tabX = statsPanelX + statsPadding;
     const availableWidth = canvas.width - tabX - statsPadding;
-    const tabWidth = Math.floor((availableWidth - (2 * statsTabGap)) / 3);
+    const tabWidth = Math.floor((availableWidth - (3 * statsTabGap)) / 4);
     const listTabX = tabX;
     const eventsTabX = listTabX + tabWidth + statsTabGap;
     const settingsTabX = eventsTabX + tabWidth + statsTabGap;
+    const statsTabX = settingsTabX + tabWidth + statsTabGap;
     const listLabel = tabWidth < 120 ? "List" : "Driver/Rider List";
 
-    return { tabWidth, listTabX, eventsTabX, settingsTabX, listLabel };
+    return { tabWidth, listTabX, eventsTabX, settingsTabX, statsTabX, listLabel };
 }
 
 function getListSubTabLayout()
@@ -363,6 +366,7 @@ function displayStats()
     const listTabX = tabLayout.listTabX;
     const eventsTabX = tabLayout.eventsTabX;
     const settingsTabX = tabLayout.settingsTabX;
+    const statsTabX = tabLayout.statsTabX;
     const tabWidth = tabLayout.tabWidth;
     const listLabel = tabLayout.listLabel;
 
@@ -378,11 +382,11 @@ function displayStats()
     drawTab(listTabX, tabWidth, listLabel, activeStatsTab === "list");
     drawTab(eventsTabX, tabWidth, "Events", activeStatsTab === "events");
     drawTab(settingsTabX, tabWidth, "Settings", activeStatsTab === "settings");
+    drawTab(statsTabX, tabWidth, "Stats", activeStatsTab === "stats");
 
     ctx.fillStyle = '#ffffff';
     ctx.font = normalFont;
-    const simDate = new Date(Simulation.startDate.getTime() + Simulation.time * 1000)
-    ctx.fillText("Sim time: " + simDate.toLocaleString(), statsPanelX + statsPadding, statsHeaderY);
+    ctx.fillText("Sim time: " + Simulation.getFormattedSimTime(), statsPanelX + statsPadding, statsHeaderY);
 
     if (activeStatsTab === "list")
     {
@@ -421,6 +425,8 @@ function displayStats()
         const eventCount = Simulation.dispatchEngine.eventLog.size;
         statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
     }
+    else if (activeStatsTab === "stats")
+        statsContentHeight = 16 * statsLineHeight;
     else
         statsContentHeight = 0;
 
@@ -591,6 +597,39 @@ function displayStats()
             }
         }
     }
+    else if (activeStatsTab === "stats")
+    {
+        const statsCards = [
+            { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
+            { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes"},
+            { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
+            { label: "(not) Average percent of busy drivers", value: ((Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size)*100 + "%" }
+        ];
+        const cardX = statsPanelX + statsPadding;
+        const cardWidth = canvas.width - cardX - statsPadding - 8;
+        const cardHeight = 72;
+        const cardGap = 12;
+        const titleY = viewportTop + 18 - activeScrollY;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = sectionFont;
+        ctx.fillText("Stats", cardX, titleY);
+
+        for (let i = 0; i < statsCards.length; i++)
+        {
+            const cardY = viewportTop + 32 + i * (cardHeight + cardGap) - activeScrollY;
+            if (cardY + cardHeight < viewportTop || cardY > viewportTop + statsViewportHeight)
+                continue;
+
+            ctx.fillStyle = "#3a3a3a";
+            ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 16px serif";
+            ctx.fillText(statsCards[i].label, cardX + 12, cardY + 24);
+            ctx.font = "18px serif";
+            ctx.fillText(statsCards[i].value, cardX + 12, cardY + 50);
+        }
+    }
     else
     {
         // Settings tab is controlled by buttons above.
@@ -644,6 +683,7 @@ function onStatsTabClick(event)
     const listTabX = tabLayout.listTabX;
     const eventsTabX = tabLayout.eventsTabX;
     const settingsTabX = tabLayout.settingsTabX;
+    const statsTabX = tabLayout.statsTabX;
     const tabWidth = tabLayout.tabWidth;
 
     if (mouseY < statsTabY || mouseY > statsTabY + statsTabHeight)
@@ -662,7 +702,13 @@ function onStatsTabClick(event)
     }
 
     if (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)
+    {
         activeStatsTab = "settings";
+        return;
+    }
+
+    if (mouseX >= statsTabX && mouseX <= statsTabX + tabWidth)
+        activeStatsTab = "stats";
 }
 
 function drawListSubTabs()
@@ -784,13 +830,15 @@ function onStatsPanelMouseDown(event)
     const listTabX = tabLayout.listTabX;
     const eventsTabX = tabLayout.eventsTabX;
     const settingsTabX = tabLayout.settingsTabX;
+    const statsTabX = tabLayout.statsTabX;
     const tabWidth = tabLayout.tabWidth;
     const inTabRow = mouseY >= statsTabY && mouseY <= statsTabY + statsTabHeight;
 
     if (inTabRow &&
         ((mouseX >= listTabX && mouseX <= listTabX + tabWidth) ||
         (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth) ||
-        (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth)))
+        (mouseX >= settingsTabX && mouseX <= settingsTabX + tabWidth) ||
+        (mouseX >= statsTabX && mouseX <= statsTabX + tabWidth)))
     {
         onStatsTabClick(event);
         return;
