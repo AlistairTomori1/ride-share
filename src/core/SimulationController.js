@@ -22,6 +22,7 @@ export default class SimulationController
             () => this.getFormattedSimTime(),
             () => this.loggingEnabled
         );
+        this.initializeEventExportLog();
         //normal sim speed is 100
         this.simSpeed = 100;
         this.baseSimSpeed = this.simSpeed;
@@ -37,6 +38,7 @@ export default class SimulationController
         this.averageBusy = 0;
         this.cachedFormattedSimTime = "";
         this.cachedFormattedMinute = -1;
+
     }
 
     getSimDate()
@@ -60,6 +62,14 @@ export default class SimulationController
             });
         }
         return this.cachedFormattedSimTime;
+    }
+
+    initializeEventExportLog()
+    {
+        this.dispatchEngine.fullEventLogLines = [];
+        this.dispatchEngine.fullEventLogLines.push("Ride Share Simulation Event Log");
+        this.dispatchEngine.fullEventLogLines.push("Start time: " + this.getFormattedSimTime());
+        this.dispatchEngine.fullEventLogLines.push("");
     }
 
     addDriver(driver)
@@ -164,8 +174,7 @@ export default class SimulationController
                     if (this.loggingEnabled)
                     {
                         let event = new Event(curr, curr.assignedRider, "pickup", null, this.getFormattedSimTime(), waitMinutes);
-                        this.dispatchEngine.eventLog.addLink(event);
-
+                        this.dispatchEngine.recordEvent(event);
                     }
                 }
             }
@@ -209,12 +218,12 @@ export default class SimulationController
                         if (this.loggingEnabled)
                         {
                             let event = new Event(curr, droppedRider, "dropoff", null, this.getFormattedSimTime(), RideMinutes);
-                            this.dispatchEngine.eventLog.addLink(event);
-
+                            this.dispatchEngine.recordEvent(event);
                         }
 
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
+                        this.dispatchEngine.rideAmount++;
                         this.dispatchEngine.totalProfits += tripProfit;
                     }
                     curr.assignedRider = null;
@@ -274,8 +283,7 @@ export default class SimulationController
             if (this.loggingEnabled)
             {
                 let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2), this.getFormattedSimTime());
-                this.dispatchEngine.eventLog.addLink(event);
-
+                this.dispatchEngine.recordEvent(event);
             }
         }
     }

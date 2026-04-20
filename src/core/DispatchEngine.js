@@ -19,6 +19,21 @@ export default class DispatchEngine
         this.availableCount = 0;
         this.waitingCount = 0;
         this.shouldLogEvents = shouldLogEvents;
+        this.fullEventLogLines = [];
+        this.rideAmount = 0;
+    }
+
+    recordEvent(event)
+    {
+        const exportLine = "[" + event.time + "] " + event.event;
+        this.fullEventLogLines.push(exportLine);
+
+        if (this.shouldLogEvents())
+        {
+            this.eventLog.addLink(event);
+            while (this.eventLog.size > 200)
+                this.eventLog.remove(this.eventLog.head);
+        }
     }
 
     update(speedMultiplier = 1)
@@ -120,8 +135,7 @@ export default class DispatchEngine
         if (this.shouldLogEvents())
         {
             let event = new Event(driver, rider, "assigned", null, this.getCurrentTime());
-            this.eventLog.addLink(event);
-
+            this.recordEvent(event);
         }
     }
     updateBusyDrivers()
@@ -167,8 +181,7 @@ export default class DispatchEngine
                     if (this.shouldLogEvents())
                     {
                         let event = new Event(null, rider, "expire", null, this.getCurrentTime());
-                        this.eventLog.addLink(event);
-
+                        this.recordEvent(event);
                     }
                     this.expireCount++;
                 }
@@ -194,10 +207,8 @@ export default class DispatchEngine
 
                     if (this.shouldLogEvents())
                     {
-
                         let event = new Event(null, rider, "expire", null, this.getCurrentTime());
-                        this.eventLog.addLink(event);
-
+                        this.recordEvent(event);
                     }
                     this.expireCount++;
                 }
@@ -220,3 +231,4 @@ export default class DispatchEngine
     }
 
 }
+

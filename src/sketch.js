@@ -7,6 +7,7 @@ let lastSpawnTime;
 let Simulation = new SimulationController();
 let canvas, ctx;
 let riderLength = 0;
+let nextDriverId = 0;
 let height = 800;
 let width = 1200;
 let size = 40;
@@ -31,7 +32,7 @@ const pauseButtonWidth = 90;
 const speedButtonGap = 4;
 const speedButtonWidth = 34;
 const speedButtonHeight = 20;
-const speedMultipliers = [0.5, 1, 2, 4];
+const speedMultipliers = [0.5, 1, 2, 10];
 const listSubTabY = pauseButtonY + speedButtonHeight + 8;
 const listSubTabHeight = 20;
 const listSubTabGap = 4;
@@ -41,8 +42,15 @@ const settingsControlY = settingsTextModeButtonY + 24;
 const gridButtonY = settingsControlY + 28;
 const gridButtonGap = 4;
 const gridButtonWidth = 34;
+const driverControlY = gridButtonY + 28;
+const driverInputWidth = 180;
+const targetRatioControlY = driverControlY + 56;
+const targetRatioButtonGap = 4;
+const targetRatioButtonWidth = 34;
 const gridSizes = [5, 10, 20, 40, 80];
 const gridLabels = ["5", "10", "20", "40", "80"];
+const targetRatioOptions = [0.50, 0.65, 0.85, 1.00, 1.20];
+const targetRatioLabels = ["50", "65", "85", "100", "120"];
 const statsViewportTop = 110;
 const listViewportTop = listSubTabY + listSubTabHeight + 8;
 const eventsViewportTop = 92;
@@ -55,6 +63,7 @@ let activeListSubTab = "all";
 let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
+let targetBusyRatio = 0.85;
 let spawnBudget = 0;
 let spawnIntergral = 0;
 let eventWrapCache = new WeakMap();
@@ -63,7 +72,6 @@ let cachedEventContentHeight = 0;
 let cachedEventLayoutHead = null;
 let cachedEventLayoutTail = null;
 let cachedEventLayoutSize = -1;
-
 let batchTargetHours = 6;
 let batchTargetSeconds = batchTargetHours * 60 * 60;
 const BATCH_FIXED_STEP = 1 / 60;
@@ -74,19 +82,42 @@ let batchProgress = 0;
 const batchButtonWidth = 132;
 const batchButtonHeight = 20;
 const batchButtonY = statsHeaderY + 8;
+const downloadButtonWidth = 180;
+const downloadButtonHeight = 28;
+const statsDownloadButtonWidth = 180;
+const statsDownloadButtonHeight = 20;
+const statsDownloadButtonY = batchButtonY + 28;
+const backButtonWidth = 120;
+const backButtonHeight = 28;
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
 carImg.src = "./assets/car-green.png";
 
+function downloadEventLog()
+{
+    const text = Simulation.dispatchEngine.fullEventLogLines.join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "event-log.txt";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
 function seedSimulation(driverCount = 10, riderCount = 10)
 {
     riderLength = 0;
+    nextDriverId = 0;
     spawnBudget = 0;
 
     for (let i = 0; i < driverCount; i++)
     {
-        spawnDriver(i);
+        spawnDriver(nextDriverId);
+        nextDriverId += 1;
     }
 
     for (let i = 0; i < riderCount; i++)
@@ -101,7 +132,7 @@ function resetSimulationForBatch()
     Simulation = new SimulationController();
     Simulation.simSpeed = Simulation.baseSimSpeed;
     Simulation.pause = 1;
-    Simulation.loggingEnabled = false;
+    Simulation.loggingEnabled = true;
 
     activeSpeedMultiplier = 1;
     batchProgress = 0;
@@ -112,9 +143,26 @@ function resetSimulationForBatch()
     seedSimulation(10, 10);
 }
 
+function resetSimulationForDriverCount(driverCount)
+{
+    Simulation = new SimulationController();
+    Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+    Simulation.pause = 1;
+
+    batchRunActive = false;
+    batchRunDone = false;
+    batchProgress = 0;
+    lastFrameTime = performance.now();
+
+    statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
+    activeListSubTab = "all";
+    invalidateEventLayoutCache();
+    seedSimulation(driverCount, 10);
+}
+
 function startBatchRun()
 {
-    if (batchRunActive)
+    if (batchRunActive || batchRunDone)
         return;
 
     resetSimulationForBatch();
@@ -206,6 +254,13 @@ function draw()
         return;
     }
 
+    if (batchRunDone)
+    {
+        drawEndSimScreen();
+        requestAnimationFrame(draw);
+        return;
+    }
+
     ctx.fillStyle = "#282828"
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -229,17 +284,18 @@ function draw()
 
 function spawnController()
 {
-    let busyRatio = (Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size;
-    let waitPerDriver = (Simulation.dispatchEngine.waitingCount) / Simulation.driverList.size;
+    const driverCount = Math.max(1, Simulation.driverList.size);
+    let busyRatio = (driverCount - Simulation.dispatchEngine.availableCount) / driverCount;
+    let waitPerDriver = Simulation.dispatchEngine.waitingCount / driverCount;
 
-    let rate = Simulation.driverList.size * 0.12;
-    rate += (1.00 - busyRatio) * Simulation.driverList.size * 0.36;
-    rate -= Math.max(0, waitPerDriver - 0.05) * Simulation.driverList.size * 0.8;
+    let rate = driverCount * 0.12;
+    rate += (targetBusyRatio - busyRatio) * driverCount * 0.36;
+    rate -= Math.max(0, waitPerDriver - 0.05) * driverCount * 0.8;
 
-    if (busyRatio > 0.87)
-        rate -= (busyRatio - 0.87) * Simulation.driverList.size * 0.9;
+    if (busyRatio > targetBusyRatio + 0.02)
+        rate -= (busyRatio - (targetBusyRatio + 0.02)) * driverCount * 0.9;
 
-    rate = Math.max(0, Math.min(rate, Simulation.driverList.size * 0.25));
+    rate = Math.max(0, Math.min(rate, driverCount * 0.25));
 
     let speedMult = Simulation.simSpeed / Simulation.baseSimSpeed;
     spawnBudget += (rate * speedMult) / 60;
@@ -514,6 +570,8 @@ function displayStats()
         drawPauseButton(settingsControlY);
         drawSpeedButtons("settings");
         drawGridSizeButtons();
+        drawDriverCountButtons();
+        drawTargetRatioButtons();
     }
     else if (activeStatsTab === "stats")
     {
@@ -524,6 +582,11 @@ function displayStats()
         ctx.font = "12px serif";
         ctx.fillText("Run Batch", batchButtonX + 28, batchButtonY + 14);
         ctx.fillText("Hours: " + batchTargetHours, batchButtonX + batchButtonWidth + 10, batchButtonY + 14);
+
+        ctx.fillStyle = "#4f4f4f";
+        ctx.fillRect(batchButtonX, statsDownloadButtonY, statsDownloadButtonWidth, statsDownloadButtonHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("Download Event Log", batchButtonX + 20, statsDownloadButtonY + 14);
     }
 
     let viewportTop = statsViewportTop;
@@ -731,7 +794,8 @@ function displayStats()
             let currEvent = eventLogList.tail;
             while (currEvent !== null)
             {
-                const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+                const eventMessage = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+                const eventText = currEvent.time !== undefined ? "[" + currEvent.time + "] " + eventMessage : eventMessage;
                 const wrappedLines = getWrappedEventLines(currEvent, eventText, wrappedTextMaxWidth, normalFont);
                 ctx.font = normalFont;
 
@@ -751,12 +815,7 @@ function displayStats()
     }
     else if (activeStatsTab === "stats")
     {
-        const statsCards = [
-            { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
-            { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes"},
-            { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
-            { label: "Average percent of busy drivers", value: Math.round(Simulation.averageBusy) + "%" }
-        ];
+        const statsCards = getStatsCardData();
         const cardX = statsPanelX + statsPadding;
         const cardWidth = canvas.width - cardX - statsPadding - 8;
         const cardHeight = 72;
@@ -924,7 +983,7 @@ function drawSpeedButtons(tab)
 {
     const startX = getSpeedButtonsStartX(tab);
     const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
-    const labels = ["0.5X", "1X", "2X", "4X"];
+    const labels = ["0.5X", "1X", "2X", "10X"];
     ctx.font = "12px serif";
 
     for (let i = 0; i < labels.length; i++)
@@ -973,11 +1032,89 @@ function drawGridSizeButtons()
     }
 }
 
+function drawDriverCountButtons()
+{
+    const startX = statsPanelX + statsPadding;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Drivers: " + Simulation.driverList.size, startX, driverControlY + 14);
+
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(startX, driverControlY + 20, driverInputWidth, speedButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Set driver count", startX + 28, driverControlY + 34);
+}
+
+function drawTargetRatioButtons()
+{
+    const startX = statsPanelX + statsPadding;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioControlY + 14);
+
+    let buttonX = startX;
+    for (let i = 0; i < targetRatioOptions.length; i++)
+    {
+        if (targetBusyRatio === targetRatioOptions[i])
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+
+        ctx.fillText(targetRatioLabels[i], buttonX + 6, targetRatioControlY + 34);
+        buttonX += targetRatioButtonWidth + targetRatioButtonGap;
+    }
+}
+
 function onStatsPanelMouseDown(event)
 {
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
+
+    if (batchRunDone)
+    {
+        const layout = getEndSimLayout();
+        const downloadButtonX = layout.downloadButtonX;
+        const downloadButtonY = layout.downloadButtonY;
+        const backButtonX = layout.backButtonX;
+        const backButtonY = layout.backButtonY;
+
+        if (
+            mouseX >= downloadButtonX &&
+            mouseX <= downloadButtonX + downloadButtonWidth &&
+            mouseY >= downloadButtonY &&
+            mouseY <= downloadButtonY + downloadButtonHeight
+        )
+        {
+            downloadEventLog();
+            return;
+        }
+
+        if (
+            mouseX >= backButtonX &&
+            mouseX <= backButtonX + backButtonWidth &&
+            mouseY >= backButtonY &&
+            mouseY <= backButtonY + backButtonHeight
+        )
+        {
+            batchRunDone = false;
+            lastFrameTime = performance.now();
+            return;
+        }
+
+        return;
+    }
+
     const tabLayout = getStatsTabLayout();
     const listTabX = tabLayout.listTabX;
     const eventsTabX = tabLayout.eventsTabX;
@@ -1101,10 +1238,43 @@ function onStatsPanelMouseDown(event)
                 gridX += buttonWidth + gridButtonGap;
             }
         }
+
+        if (mouseY >= driverControlY + 20 && mouseY <= driverControlY + 20 + speedButtonHeight)
+        {
+            const driverInputX = statsPanelX + statsPadding;
+            if (mouseX >= driverInputX && mouseX <= driverInputX + driverInputWidth)
+            {
+                const driverInput = window.prompt("Enter the number of drivers:", String(Simulation.driverList.size));
+                if (driverInput === null)
+                    return;
+
+                const parsedDrivers = Math.floor(Number(driverInput));
+                if (!Number.isFinite(parsedDrivers) || parsedDrivers < 1)
+                    return;
+
+                resetSimulationForDriverCount(parsedDrivers);
+                return;
+            }
+        }
+
+        if (mouseY >= targetRatioControlY + 20 && mouseY <= targetRatioControlY + 20 + speedButtonHeight)
+        {
+            let targetRatioX = statsPanelX + statsPadding;
+            for (let i = 0; i < targetRatioOptions.length; i++)
+            {
+                if (mouseX >= targetRatioX && mouseX <= targetRatioX + targetRatioButtonWidth)
+                {
+                    targetBusyRatio = targetRatioOptions[i];
+                    return;
+                }
+                targetRatioX += targetRatioButtonWidth + targetRatioButtonGap;
+            }
+        }
     }
     else if (activeStatsTab === "stats")
 {
     const batchButtonX = statsPanelX + statsPadding;
+    const downloadButtonX = batchButtonX;
 
     if (mouseX >= batchButtonX && mouseX <= batchButtonX + batchButtonWidth &&
         mouseY >= batchButtonY && mouseY <= batchButtonY + batchButtonHeight)
@@ -1120,6 +1290,13 @@ function onStatsPanelMouseDown(event)
         batchTargetHours = parsedHours;
         batchTargetSeconds = batchTargetHours * 60 * 60;
         startBatchRun();
+        return;
+    }
+
+    if (mouseX >= downloadButtonX && mouseX <= downloadButtonX + statsDownloadButtonWidth &&
+        mouseY >= statsDownloadButtonY && mouseY <= statsDownloadButtonY + statsDownloadButtonHeight)
+    {
+        downloadEventLog();
         return;
     }
 }
@@ -1206,6 +1383,100 @@ function getCachedEventContentHeight(eventLogList, maxWidth, font, lineHeight, e
     cachedEventLayoutTail = eventLogList.tail;
     cachedEventLayoutSize = eventLogList.size;
     return cachedEventContentHeight;
+}
+
+function getStatsCardData()
+{
+    return [
+        { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
+        { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes" },
+        { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
+        { label: "Average percent of busy drivers", value: Math.round(Simulation.averageBusy) + "%" },
+        { label: "Total rides done", value: Simulation.dispatchEngine.rideAmount },
+        { label: "Total earnings", value: "$" + Simulation.dispatchEngine.totalProfits }
+    ];
+}
+
+function getEndSimLayout()
+{
+    const panelWidth = Math.min(520, canvas.width - 80);
+    const panelX = Math.max(40, (canvas.width - panelWidth) / 2);
+    const panelY = 48;
+    const cardHeight = 72;
+    const cardGap = 12;
+    const statsCards = getStatsCardData();
+    const panelHeight = 120 + statsCards.length * (cardHeight + cardGap) + 36;
+    const downloadButtonX = panelX + 18;
+    const downloadButtonY = panelY + panelHeight - 52;
+    const backButtonX = panelX + panelWidth - backButtonWidth - 18;
+    const backButtonY = downloadButtonY;
+
+    return {
+        panelWidth,
+        panelX,
+        panelY,
+        cardHeight,
+        cardGap,
+        statsCards,
+        panelHeight,
+        downloadButtonX,
+        downloadButtonY,
+        backButtonX,
+        backButtonY
+    };
+}
+
+function drawEndSimScreen()
+{
+    ctx.fillStyle = "#282828";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const layout = getEndSimLayout();
+    const panelWidth = layout.panelWidth;
+    const panelX = layout.panelX;
+    const panelY = layout.panelY;
+    const cardHeight = layout.cardHeight;
+    const cardGap = layout.cardGap;
+    const statsCards = layout.statsCards;
+    const panelHeight = layout.panelHeight;
+
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 28px serif";
+    ctx.fillText("Simulation Complete", panelX + 24, panelY + 42);
+
+    ctx.font = "16px serif";
+    ctx.fillText("Duration: " + batchTargetHours + " hours", panelX + 24, panelY + 72);
+    ctx.fillText("End time: " + Simulation.getFormattedSimTime(), panelX + 24, panelY + 96);
+
+    for (let i = 0; i < statsCards.length; i++)
+    {
+        const cardY = panelY + 118 + i * (cardHeight + cardGap);
+        ctx.fillStyle = "#3f3f3f";
+        ctx.fillRect(panelX + 18, cardY, panelWidth - 36, cardHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px serif";
+        ctx.fillText(statsCards[i].label, panelX + 30, cardY + 24);
+        ctx.font = "18px serif";
+        ctx.fillText(statsCards[i].value, panelX + 30, cardY + 50);
+    }
+
+    const downloadButtonX = layout.downloadButtonX;
+    const downloadButtonY = layout.downloadButtonY;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(downloadButtonX, downloadButtonY, downloadButtonWidth, downloadButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "14px serif";
+    ctx.fillText("Download Event Log", downloadButtonX + 20, downloadButtonY + 19);
+
+    const backButtonX = layout.backButtonX;
+    const backButtonY = layout.backButtonY;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(backButtonX, backButtonY, backButtonWidth, backButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Back to Sim", backButtonX + 23, backButtonY + 19);
 }
 
 //AI IMPLEMENTATION DONE ^

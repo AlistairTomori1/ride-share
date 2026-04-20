@@ -7,3 +7,4 @@
 5. Updated simulation time progression to scale by speed multiplier so timing systems remain consistent at higher sim speeds.
 6. Updated rider expiration countdown to run in simulation time, preventing mismatch between displayed speed and lifecycle timing.
 7. Added text-only mode so heavy rendering work can be skipped for large-load performance testing.
+8. added downloadable event log
