@@ -1,9 +1,6 @@
 import SimulationController from "./core/SimulationController.js";
 import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
-import DispatchEngine from "./core/DispatchEngine.js";
-let spawnInterval;
-let lastSpawnTime;
 let Simulation = new SimulationController();
 let canvas, ctx;
 let riderLength = 0;
@@ -56,7 +53,10 @@ const listViewportTop = listSubTabY + listSubTabHeight + 8;
 const eventsViewportTop = 92;
 const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
+const NORMAL_FIXED_STEP = 1 / 120;
+const MAX_SIM_STEPS_PER_FRAME = 8;
 let lastFrameTime = performance.now();
+let simAccumulator = 0;
 let activeStatsTab = "list";
 let statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
 let activeListSubTab = "all";
@@ -65,7 +65,6 @@ const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let targetBusyRatio = 0.85;
 let spawnBudget = 0;
-let spawnIntergral = 0;
 let eventWrapCache = new WeakMap();
 let eventWrapCacheWidth = -1;
 let cachedEventContentHeight = 0;
@@ -93,6 +92,8 @@ let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
 carImg.src = "./assets/car-green.png";
+
+
 
 function downloadEventLog()
 {
@@ -138,6 +139,7 @@ function resetSimulationForBatch()
     batchProgress = 0;
     batchRunDone = false;
     lastFrameTime = performance.now();
+    simAccumulator = 0;
 
     invalidateEventLayoutCache();
     seedSimulation(10, 10);
@@ -153,6 +155,7 @@ function resetSimulationForDriverCount(driverCount)
     batchRunDone = false;
     batchProgress = 0;
     lastFrameTime = performance.now();
+    simAccumulator = 0;
 
     statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
     activeListSubTab = "all";
@@ -206,19 +209,7 @@ function finishBatchRun()
     Simulation.pause = 0;
     activeStatsTab = "stats";
     lastFrameTime = performance.now();
-}
-
-function drawBatchScreen()
-{
-    ctx.fillStyle = "#282828";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 24px serif";
-    ctx.fillText("Running " + batchTargetHours + " Hour Simulation...", 40, 80);
-
-    ctx.font = "18px serif";
-    ctx.fillText("Progress: " + Math.round(batchProgress * 100) + "%", 40, 120);
+    simAccumulator = 0;
 }
 
 function setup()
@@ -237,14 +228,31 @@ function setup()
 
 function draw()
 {
-    if (!batchRunActive)
+    if (!batchRunActive && !batchRunDone)
     {
         const now = performance.now();
-        let deltaSeconds = (now - lastFrameTime) / 1000;
-        deltaSeconds = Math.min(deltaSeconds, 0.1);
+        let frameSeconds = (now - lastFrameTime) / 1000;
+        frameSeconds = Math.min(frameSeconds, 0.1);
         lastFrameTime = now;
-        Simulation.runSim(deltaSeconds);
 
+        if (Simulation.pause == 1)
+        {
+            simAccumulator += frameSeconds;
+
+            let stepCount = 0;
+            while (simAccumulator >= NORMAL_FIXED_STEP && stepCount < MAX_SIM_STEPS_PER_FRAME)
+            {
+                Simulation.runSim(NORMAL_FIXED_STEP);
+                spawnController();
+                simAccumulator -= NORMAL_FIXED_STEP;
+                stepCount += 1;
+            }
+
+            if (stepCount === MAX_SIM_STEPS_PER_FRAME && simAccumulator >= NORMAL_FIXED_STEP)
+                simAccumulator = 0;
+        }
+        else
+            simAccumulator = 0;
     }
 
     if (batchRunActive)
@@ -275,9 +283,6 @@ function draw()
     }
 
     displayStats();
-
-    if (Simulation.pause == 1 && !batchRunDone)
-        spawnController();
 
     requestAnimationFrame(draw);
 }
@@ -362,7 +367,6 @@ function getCount()
 
 }
 
-
 function spawnDriver(id)
 {
 
@@ -399,6 +403,78 @@ function getCapacity()
     return 10;
 }
 
+function drawBatchScreen()
+{
+    ctx.fillStyle = "#282828";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px serif";
+    ctx.fillText("Running " + batchTargetHours + " Hour Simulation...", 40, 80);
+
+    ctx.font = "18px serif";
+    ctx.fillText("Progress: " + Math.round(batchProgress * 100) + "%", 40, 120);
+}
+
+function drawGrid(size)
+{
+    ctx.strokeStyle = '#3c3c3c'; 
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x+= size)
+    {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < height; y+= size)
+    {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+}
+
+function drawRoute()
+{
+    let curr = Simulation.driverList.head;
+
+    while (curr !== null)
+    {
+        if (curr.state == "PICKING UP")
+        {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(curr.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.location[0], curr.location[1]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(curr.assignedRider.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.location[0], curr.assignedRider.location[1]);
+        ctx.stroke();
+        }
+
+        if (curr.state == "DROPPING OFF")
+        {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(curr.location[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.dropOff[0], curr.location[1]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(curr.assignedRider.dropOff[0], curr.location[1]);
+        ctx.lineTo(curr.assignedRider.dropOff[0], curr.assignedRider.dropOff[1]);
+        ctx.stroke();
+        }
+        curr = curr.next;
+    }
+}
+
 function drawDrivers()
 {
     let curr = Simulation.driverList.head;
@@ -422,7 +498,6 @@ function drawDrivers()
         }
 
 }
-
 
 function drawRiders()
 {
@@ -473,26 +548,8 @@ function drawRiders()
         
 }
 
-function drawGrid(size)
-{
-    ctx.strokeStyle = '#3c3c3c'; 
-    ctx.lineWidth = 1;
-    for (let x = 0; x < width; x+= size)
-    {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-    }
-    for (let y = 0; y < height; y+= size)
-    {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-}
 //AI IMPLEMENTED
+
 function getStatsTabLayout()
 {
     const tabX = statsPanelX + statsPadding;
@@ -521,6 +578,280 @@ function getListSubTabLayout()
     const tabWidth = Math.floor((availableWidth - ((subTabs.length - 1) * listSubTabGap)) / subTabs.length);
 
     return { subTabs, startX, tabWidth };
+}
+
+function invalidateEventLayoutCache()
+{
+    eventWrapCache = new WeakMap();
+    eventWrapCacheWidth = -1;
+    cachedEventContentHeight = 0;
+    cachedEventLayoutHead = null;
+    cachedEventLayoutTail = null;
+    cachedEventLayoutSize = -1;
+}
+
+function getWrappedEventLines(eventNode, eventText, maxWidth, font)
+{
+    if (eventWrapCacheWidth !== maxWidth)
+    {
+        eventWrapCache = new WeakMap();
+        eventWrapCacheWidth = maxWidth;
+        cachedEventContentHeight = 0;
+        cachedEventLayoutHead = null;
+        cachedEventLayoutTail = null;
+        cachedEventLayoutSize = -1;
+    }
+
+    const cachedWrap = eventWrapCache.get(eventNode);
+    if (cachedWrap && cachedWrap.text === eventText && cachedWrap.font === font)
+        return cachedWrap.lines;
+
+    ctx.font = font;
+    const words = String(eventText).split(" ");
+    const lines = [];
+    let currentLine = "";
+
+    for (let i = 0; i < words.length; i++)
+    {
+        const testLine = currentLine === "" ? words[i] : currentLine + " " + words[i];
+        if (ctx.measureText(testLine).width <= maxWidth || currentLine === "")
+            currentLine = testLine;
+        else
+        {
+            lines.push(currentLine);
+            currentLine = words[i];
+        }
+    }
+
+    if (currentLine !== "")
+        lines.push(currentLine);
+
+    const wrappedLines = lines.length > 0 ? lines : [""];
+    eventWrapCache.set(eventNode, { text: eventText, font, lines: wrappedLines });
+    return wrappedLines;
+}
+
+function getCachedEventContentHeight(eventLogList, maxWidth, font, lineHeight, eventGap)
+{
+    if (!eventLogList || eventLogList.size === 0)
+        return 2 * lineHeight;
+
+    if (
+        cachedEventLayoutHead === eventLogList.head &&
+        cachedEventLayoutTail === eventLogList.tail &&
+        cachedEventLayoutSize === eventLogList.size &&
+        eventWrapCacheWidth === maxWidth
+    )
+        return cachedEventContentHeight;
+
+    let eventContentHeight = lineHeight;
+    let currEvent = eventLogList.tail;
+    while (currEvent !== null)
+    {
+        const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+        eventContentHeight += (getWrappedEventLines(currEvent, eventText, maxWidth, font).length * lineHeight) + eventGap;
+        currEvent = currEvent.prev;
+    }
+
+    cachedEventContentHeight = eventContentHeight;
+    cachedEventLayoutHead = eventLogList.head;
+    cachedEventLayoutTail = eventLogList.tail;
+    cachedEventLayoutSize = eventLogList.size;
+    return cachedEventContentHeight;
+}
+
+function getStatsCardData()
+{
+    return [
+        { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
+        { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes" },
+        { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
+        { label: "Average percent of busy drivers", value: Math.round(Simulation.averageBusy) + "%" },
+        { label: "Total rides done", value: Simulation.dispatchEngine.rideAmount },
+        { label: "Total earnings", value: "$" + Simulation.dispatchEngine.totalProfits }
+    ];
+}
+
+function getEndSimLayout()
+{
+    const panelWidth = Math.min(520, canvas.width - 80);
+    const panelX = Math.max(40, (canvas.width - panelWidth) / 2);
+    const panelY = 48;
+    const cardHeight = 72;
+    const cardGap = 12;
+    const statsCards = getStatsCardData();
+    const panelHeight = 120 + statsCards.length * (cardHeight + cardGap) + 36;
+    const downloadButtonX = panelX + 18;
+    const downloadButtonY = panelY + panelHeight - 52;
+    const backButtonX = panelX + panelWidth - backButtonWidth - 18;
+    const backButtonY = downloadButtonY;
+
+    return {
+        panelWidth,
+        panelX,
+        panelY,
+        cardHeight,
+        cardGap,
+        statsCards,
+        panelHeight,
+        downloadButtonX,
+        downloadButtonY,
+        backButtonX,
+        backButtonY
+    };
+}
+
+function drawListSubTabs()
+{
+    const layout = getListSubTabLayout();
+    let tabX = layout.startX;
+    ctx.font = "11px serif";
+
+    for (let i = 0; i < layout.subTabs.length; i++)
+    {
+        const tab = layout.subTabs[i];
+        const label = (layout.tabWidth < 56 && tab.compactLabel) ? tab.compactLabel : tab.label;
+        const isActive = activeListSubTab === tab.id;
+        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
+        ctx.fillRect(tabX, listSubTabY, layout.tabWidth, listSubTabHeight);
+        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
+        ctx.fillText(label, tabX + 5, listSubTabY + 14);
+        tabX += layout.tabWidth + listSubTabGap;
+    }
+}
+
+function drawPauseButton(drawY)
+{
+    const buttonX = statsPanelX + statsPadding;
+    const label = Simulation.pause === 1 ? "Pause" : "Resume";
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(buttonX, drawY, pauseButtonWidth, pauseButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "14px serif";
+    ctx.fillText(label, buttonX + 24, drawY + 14);
+}
+
+function drawSurgeButton(drawY)
+{
+    const buttonX = statsPanelX + statsPadding;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(buttonX, drawY, surgeButtonWidth, surgeButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "13px serif";
+    ctx.fillText("Surge +10", buttonX + 8, drawY + 14);
+}
+
+function drawTextModeButton(drawY)
+{
+    const buttonX = statsPanelX + statsPadding;
+    ctx.fillStyle = textOnlyMode ? "#ffffff" : "#4f4f4f";
+    ctx.fillRect(buttonX, drawY, textModeButtonWidth, textModeButtonHeight);
+    ctx.fillStyle = textOnlyMode ? "#1e1e1e" : "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Text only mode", buttonX + 12, drawY + 14);
+}
+
+function getSpeedButtonsStartX(tab)
+{
+    if (tab === "settings")
+        return statsPanelX + statsPadding + pauseButtonWidth + 6;
+    return statsPanelX + statsPadding + pauseButtonWidth + 6;
+}
+
+function drawSpeedButtons(tab)
+{
+    const startX = getSpeedButtonsStartX(tab);
+    const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
+    const labels = ["0.5X", "1X", "2X", "10X"];
+    ctx.font = "12px serif";
+
+    for (let i = 0; i < labels.length; i++)
+    {
+        const buttonX = startX + i * (speedButtonWidth + speedButtonGap);
+        if (speedMultipliers[i] === activeSpeedMultiplier)
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+        ctx.fillText(labels[i], buttonX + 6, drawY + 14);
+    }
+}
+
+function drawGridSizeButtons()
+{
+    const startX = statsPanelX + statsPadding;
+    let buttonX = startX;
+    ctx.font = "12px serif";
+
+    for (let i = 0; i < gridSizes.length; i++)
+    {
+        const buttonWidth = gridButtonWidth;
+        if (size === gridSizes[i])
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+
+        ctx.fillText(gridLabels[i], buttonX + 6, gridButtonY + 14);
+        buttonX += buttonWidth + gridButtonGap;
+    }
+}
+
+function drawDriverCountButtons()
+{
+    const startX = statsPanelX + statsPadding;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Drivers: " + Simulation.driverList.size, startX, driverControlY + 14);
+
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(startX, driverControlY + 20, driverInputWidth, speedButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Set driver count", startX + 28, driverControlY + 34);
+}
+
+function drawTargetRatioButtons()
+{
+    const startX = statsPanelX + statsPadding;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px serif";
+    ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioControlY + 14);
+
+    let buttonX = startX;
+    for (let i = 0; i < targetRatioOptions.length; i++)
+    {
+        if (targetBusyRatio === targetRatioOptions[i])
+        {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#1e1e1e";
+        }
+        else
+        {
+            ctx.fillStyle = "#4f4f4f";
+            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
+            ctx.fillStyle = "#ffffff";
+        }
+
+        ctx.fillText(targetRatioLabels[i], buttonX + 6, targetRatioControlY + 34);
+        buttonX += targetRatioButtonWidth + targetRatioButtonGap;
+    }
 }
 
 function displayStats()
@@ -864,6 +1195,59 @@ function displayStats()
 
 }
 
+function drawEndSimScreen()
+{
+    ctx.fillStyle = "#282828";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const layout = getEndSimLayout();
+    const panelWidth = layout.panelWidth;
+    const panelX = layout.panelX;
+    const panelY = layout.panelY;
+    const cardHeight = layout.cardHeight;
+    const cardGap = layout.cardGap;
+    const statsCards = layout.statsCards;
+    const panelHeight = layout.panelHeight;
+
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 28px serif";
+    ctx.fillText("Simulation Complete", panelX + 24, panelY + 42);
+
+    ctx.font = "16px serif";
+    ctx.fillText("Duration: " + batchTargetHours + " hours", panelX + 24, panelY + 72);
+    ctx.fillText("End time: " + Simulation.getFormattedSimTime(), panelX + 24, panelY + 96);
+
+    for (let i = 0; i < statsCards.length; i++)
+    {
+        const cardY = panelY + 118 + i * (cardHeight + cardGap);
+        ctx.fillStyle = "#3f3f3f";
+        ctx.fillRect(panelX + 18, cardY, panelWidth - 36, cardHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px serif";
+        ctx.fillText(statsCards[i].label, panelX + 30, cardY + 24);
+        ctx.font = "18px serif";
+        ctx.fillText(statsCards[i].value, panelX + 30, cardY + 50);
+    }
+
+    const downloadButtonX = layout.downloadButtonX;
+    const downloadButtonY = layout.downloadButtonY;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(downloadButtonX, downloadButtonY, downloadButtonWidth, downloadButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "14px serif";
+    ctx.fillText("Download Event Log", downloadButtonX + 20, downloadButtonY + 19);
+
+    const backButtonX = layout.backButtonX;
+    const backButtonY = layout.backButtonY;
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(backButtonX, backButtonY, backButtonWidth, backButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("Back to Sim", backButtonX + 23, backButtonY + 19);
+}
+
 function onStatsWheel(event)
 {
     const rect = canvas.getBoundingClientRect();
@@ -922,159 +1306,6 @@ function onStatsTabClick(event)
         activeStatsTab = "stats";
 }
 
-function drawListSubTabs()
-{
-    const layout = getListSubTabLayout();
-    let tabX = layout.startX;
-    ctx.font = "11px serif";
-
-    for (let i = 0; i < layout.subTabs.length; i++)
-    {
-        const tab = layout.subTabs[i];
-        const label = (layout.tabWidth < 56 && tab.compactLabel) ? tab.compactLabel : tab.label;
-        const isActive = activeListSubTab === tab.id;
-        ctx.fillStyle = isActive ? "#ffffff" : "#4f4f4f";
-        ctx.fillRect(tabX, listSubTabY, layout.tabWidth, listSubTabHeight);
-        ctx.fillStyle = isActive ? "#1e1e1e" : "#ffffff";
-        ctx.fillText(label, tabX + 5, listSubTabY + 14);
-        tabX += layout.tabWidth + listSubTabGap;
-    }
-}
-
-function drawPauseButton(drawY)
-{
-    const buttonX = statsPanelX + statsPadding;
-    const label = Simulation.pause === 1 ? "Pause" : "Resume";
-    ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, drawY, pauseButtonWidth, pauseButtonHeight);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "14px serif";
-    ctx.fillText(label, buttonX + 24, drawY + 14);
-}
-
-function drawSurgeButton(drawY)
-{
-    const buttonX = statsPanelX + statsPadding;
-    ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, drawY, surgeButtonWidth, surgeButtonHeight);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "13px serif";
-    ctx.fillText("Surge +10", buttonX + 8, drawY + 14);
-}
-
-function drawTextModeButton(drawY)
-{
-    const buttonX = statsPanelX + statsPadding;
-    ctx.fillStyle = textOnlyMode ? "#ffffff" : "#4f4f4f";
-    ctx.fillRect(buttonX, drawY, textModeButtonWidth, textModeButtonHeight);
-    ctx.fillStyle = textOnlyMode ? "#1e1e1e" : "#ffffff";
-    ctx.font = "12px serif";
-    ctx.fillText("Text only mode", buttonX + 12, drawY + 14);
-}
-
-function getSpeedButtonsStartX(tab)
-{
-    if (tab === "settings")
-        return statsPanelX + statsPadding + pauseButtonWidth + 6;
-    return statsPanelX + statsPadding + pauseButtonWidth + 6;
-}
-
-function drawSpeedButtons(tab)
-{
-    const startX = getSpeedButtonsStartX(tab);
-    const drawY = (tab === "settings") ? settingsControlY : pauseButtonY;
-    const labels = ["0.5X", "1X", "2X", "10X"];
-    ctx.font = "12px serif";
-
-    for (let i = 0; i < labels.length; i++)
-    {
-        const buttonX = startX + i * (speedButtonWidth + speedButtonGap);
-        if (speedMultipliers[i] === activeSpeedMultiplier)
-        {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
-            ctx.fillStyle = "#1e1e1e";
-        }
-        else
-        {
-            ctx.fillStyle = "#4f4f4f";
-            ctx.fillRect(buttonX, drawY, speedButtonWidth, speedButtonHeight);
-            ctx.fillStyle = "#ffffff";
-        }
-        ctx.fillText(labels[i], buttonX + 6, drawY + 14);
-    }
-}
-
-function drawGridSizeButtons()
-{
-    const startX = statsPanelX + statsPadding;
-    let buttonX = startX;
-    ctx.font = "12px serif";
-
-    for (let i = 0; i < gridSizes.length; i++)
-    {
-        const buttonWidth = gridButtonWidth;
-        if (size === gridSizes[i])
-        {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
-            ctx.fillStyle = "#1e1e1e";
-        }
-        else
-        {
-            ctx.fillStyle = "#4f4f4f";
-            ctx.fillRect(buttonX, gridButtonY, buttonWidth, speedButtonHeight);
-            ctx.fillStyle = "#ffffff";
-        }
-
-        ctx.fillText(gridLabels[i], buttonX + 6, gridButtonY + 14);
-        buttonX += buttonWidth + gridButtonGap;
-    }
-}
-
-function drawDriverCountButtons()
-{
-    const startX = statsPanelX + statsPadding;
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "12px serif";
-    ctx.fillText("Drivers: " + Simulation.driverList.size, startX, driverControlY + 14);
-
-    ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(startX, driverControlY + 20, driverInputWidth, speedButtonHeight);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText("Set driver count", startX + 28, driverControlY + 34);
-}
-
-function drawTargetRatioButtons()
-{
-    const startX = statsPanelX + statsPadding;
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "12px serif";
-    ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioControlY + 14);
-
-    let buttonX = startX;
-    for (let i = 0; i < targetRatioOptions.length; i++)
-    {
-        if (targetBusyRatio === targetRatioOptions[i])
-        {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
-            ctx.fillStyle = "#1e1e1e";
-        }
-        else
-        {
-            ctx.fillStyle = "#4f4f4f";
-            ctx.fillRect(buttonX, targetRatioControlY + 20, targetRatioButtonWidth, speedButtonHeight);
-            ctx.fillStyle = "#ffffff";
-        }
-
-        ctx.fillText(targetRatioLabels[i], buttonX + 6, targetRatioControlY + 34);
-        buttonX += targetRatioButtonWidth + targetRatioButtonGap;
-    }
-}
-
 function onStatsPanelMouseDown(event)
 {
     const rect = canvas.getBoundingClientRect();
@@ -1109,6 +1340,7 @@ function onStatsPanelMouseDown(event)
         {
             batchRunDone = false;
             lastFrameTime = performance.now();
+            simAccumulator = 0;
             return;
         }
 
@@ -1165,6 +1397,7 @@ function onStatsPanelMouseDown(event)
         {
             Simulation.pause = Simulation.pause === 1 ? 0 : 1;
             lastFrameTime = performance.now();
+            simAccumulator = 0;
             return;
         }
 
@@ -1207,6 +1440,7 @@ function onStatsPanelMouseDown(event)
         {
             Simulation.pause = Simulation.pause === 1 ? 0 : 1;
             lastFrameTime = performance.now();
+            simAccumulator = 0;
             return;
         }
 
@@ -1304,220 +1538,9 @@ function onStatsPanelMouseDown(event)
 
 }
 
+//AI IMPLEMENTATION END
 
-function invalidateEventLayoutCache()
-{
-    eventWrapCache = new WeakMap();
-    eventWrapCacheWidth = -1;
-    cachedEventContentHeight = 0;
-    cachedEventLayoutHead = null;
-    cachedEventLayoutTail = null;
-    cachedEventLayoutSize = -1;
-}
 
-function getWrappedEventLines(eventNode, eventText, maxWidth, font)
-{
-    if (eventWrapCacheWidth !== maxWidth)
-    {
-        eventWrapCache = new WeakMap();
-        eventWrapCacheWidth = maxWidth;
-        cachedEventContentHeight = 0;
-        cachedEventLayoutHead = null;
-        cachedEventLayoutTail = null;
-        cachedEventLayoutSize = -1;
-    }
-
-    const cachedWrap = eventWrapCache.get(eventNode);
-    if (cachedWrap && cachedWrap.text === eventText && cachedWrap.font === font)
-        return cachedWrap.lines;
-
-    ctx.font = font;
-    const words = String(eventText).split(" ");
-    const lines = [];
-    let currentLine = "";
-
-    for (let i = 0; i < words.length; i++)
-    {
-        const testLine = currentLine === "" ? words[i] : currentLine + " " + words[i];
-        if (ctx.measureText(testLine).width <= maxWidth || currentLine === "")
-            currentLine = testLine;
-        else
-        {
-            lines.push(currentLine);
-            currentLine = words[i];
-        }
-    }
-
-    if (currentLine !== "")
-        lines.push(currentLine);
-
-    const wrappedLines = lines.length > 0 ? lines : [""];
-    eventWrapCache.set(eventNode, { text: eventText, font, lines: wrappedLines });
-    return wrappedLines;
-}
-
-function getCachedEventContentHeight(eventLogList, maxWidth, font, lineHeight, eventGap)
-{
-    if (!eventLogList || eventLogList.size === 0)
-        return 2 * lineHeight;
-
-    if (
-        cachedEventLayoutHead === eventLogList.head &&
-        cachedEventLayoutTail === eventLogList.tail &&
-        cachedEventLayoutSize === eventLogList.size &&
-        eventWrapCacheWidth === maxWidth
-    )
-        return cachedEventContentHeight;
-
-    let eventContentHeight = lineHeight;
-    let currEvent = eventLogList.tail;
-    while (currEvent !== null)
-    {
-        const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
-        eventContentHeight += (getWrappedEventLines(currEvent, eventText, maxWidth, font).length * lineHeight) + eventGap;
-        currEvent = currEvent.prev;
-    }
-
-    cachedEventContentHeight = eventContentHeight;
-    cachedEventLayoutHead = eventLogList.head;
-    cachedEventLayoutTail = eventLogList.tail;
-    cachedEventLayoutSize = eventLogList.size;
-    return cachedEventContentHeight;
-}
-
-function getStatsCardData()
-{
-    return [
-        { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
-        { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes" },
-        { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
-        { label: "Average percent of busy drivers", value: Math.round(Simulation.averageBusy) + "%" },
-        { label: "Total rides done", value: Simulation.dispatchEngine.rideAmount },
-        { label: "Total earnings", value: "$" + Simulation.dispatchEngine.totalProfits }
-    ];
-}
-
-function getEndSimLayout()
-{
-    const panelWidth = Math.min(520, canvas.width - 80);
-    const panelX = Math.max(40, (canvas.width - panelWidth) / 2);
-    const panelY = 48;
-    const cardHeight = 72;
-    const cardGap = 12;
-    const statsCards = getStatsCardData();
-    const panelHeight = 120 + statsCards.length * (cardHeight + cardGap) + 36;
-    const downloadButtonX = panelX + 18;
-    const downloadButtonY = panelY + panelHeight - 52;
-    const backButtonX = panelX + panelWidth - backButtonWidth - 18;
-    const backButtonY = downloadButtonY;
-
-    return {
-        panelWidth,
-        panelX,
-        panelY,
-        cardHeight,
-        cardGap,
-        statsCards,
-        panelHeight,
-        downloadButtonX,
-        downloadButtonY,
-        backButtonX,
-        backButtonY
-    };
-}
-
-function drawEndSimScreen()
-{
-    ctx.fillStyle = "#282828";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const layout = getEndSimLayout();
-    const panelWidth = layout.panelWidth;
-    const panelX = layout.panelX;
-    const panelY = layout.panelY;
-    const cardHeight = layout.cardHeight;
-    const cardGap = layout.cardGap;
-    const statsCards = layout.statsCards;
-    const panelHeight = layout.panelHeight;
-
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 28px serif";
-    ctx.fillText("Simulation Complete", panelX + 24, panelY + 42);
-
-    ctx.font = "16px serif";
-    ctx.fillText("Duration: " + batchTargetHours + " hours", panelX + 24, panelY + 72);
-    ctx.fillText("End time: " + Simulation.getFormattedSimTime(), panelX + 24, panelY + 96);
-
-    for (let i = 0; i < statsCards.length; i++)
-    {
-        const cardY = panelY + 118 + i * (cardHeight + cardGap);
-        ctx.fillStyle = "#3f3f3f";
-        ctx.fillRect(panelX + 18, cardY, panelWidth - 36, cardHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 16px serif";
-        ctx.fillText(statsCards[i].label, panelX + 30, cardY + 24);
-        ctx.font = "18px serif";
-        ctx.fillText(statsCards[i].value, panelX + 30, cardY + 50);
-    }
-
-    const downloadButtonX = layout.downloadButtonX;
-    const downloadButtonY = layout.downloadButtonY;
-    ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(downloadButtonX, downloadButtonY, downloadButtonWidth, downloadButtonHeight);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "14px serif";
-    ctx.fillText("Download Event Log", downloadButtonX + 20, downloadButtonY + 19);
-
-    const backButtonX = layout.backButtonX;
-    const backButtonY = layout.backButtonY;
-    ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(backButtonX, backButtonY, backButtonWidth, backButtonHeight);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText("Back to Sim", backButtonX + 23, backButtonY + 19);
-}
-
-//AI IMPLEMENTATION DONE ^
-function drawRoute()
-{
-    let curr = Simulation.driverList.head;
-
-    while (curr !== null)
-    {
-        if (curr.state == "PICKING UP")
-        {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(curr.location[0], curr.location[1]);
-        ctx.lineTo(curr.assignedRider.location[0], curr.location[1]);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(curr.assignedRider.location[0], curr.location[1]);
-        ctx.lineTo(curr.assignedRider.location[0], curr.assignedRider.location[1]);
-        ctx.stroke();
-        }
-
-        if (curr.state == "DROPPING OFF")
-        {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(curr.location[0], curr.location[1]);
-        ctx.lineTo(curr.assignedRider.dropOff[0], curr.location[1]);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(curr.assignedRider.dropOff[0], curr.location[1]);
-        ctx.lineTo(curr.assignedRider.dropOff[0], curr.assignedRider.dropOff[1]);
-        ctx.stroke();
-        }
-        curr = curr.next;
-    }
-}
 
 window.onload = function()
 {
