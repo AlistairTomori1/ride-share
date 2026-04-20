@@ -80,3 +80,6 @@ Alistair - made it so we have a real clock instead of just seconds since start. 
 
 April 16 2026:
 Alistair - added stats tab with varius stats.
+
+April 20 2026:
+Alistair - added instant sim run as well as more stats.
