@@ -1,7 +1,7 @@
 import Node from "../data/Node.js";
 export default class RideRequest extends Node
 {
-    constructor(id, location, passengers, amenitiesRequired = [], dropOff, priority)
+    constructor(id, location, passengers, amenitiesRequired = [], dropOff, priority, spawnTime)
     {
         super(id, location, "RIDER")
         this.dropOff = dropOff;
@@ -12,5 +12,7 @@ export default class RideRequest extends Node
         this.waitTimer = 600;
         this.priority = priority;
         this.cost;
+        this.spawnTime = spawnTime;
+        this.pickupTime = null;
     }
 }
