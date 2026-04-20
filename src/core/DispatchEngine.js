@@ -4,7 +4,7 @@ import Event from "../models/Event.js";
 import ExpiredList from "../models/ExpiredList.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList, priorityList, eventLog, getCurrentTime)
+    constructor(DriverList, RiderList, priorityList, eventLog, getCurrentTime, shouldLogEvents)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
@@ -18,6 +18,7 @@ export default class DispatchEngine
         this.expireCount = 0;
         this.availableCount = 0;
         this.waitingCount = 0;
+        this.shouldLogEvents = shouldLogEvents;
     }
 
     update(speedMultiplier = 1)
@@ -115,8 +116,13 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        let event = new Event(driver, rider, "assigned", null, this.getCurrentTime());
-        this.eventLog.addLink(event);
+
+        if (this.shouldLogEvents())
+        {
+            let event = new Event(driver, rider, "assigned", null, this.getCurrentTime());
+            this.eventLog.addLink(event);
+
+        }
     }
     updateBusyDrivers()
     {
@@ -157,8 +163,13 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event(null, rider, "expire", null, this.getCurrentTime());
-                    this.eventLog.addLink(event);
+
+                    if (this.shouldLogEvents())
+                    {
+                        let event = new Event(null, rider, "expire", null, this.getCurrentTime());
+                        this.eventLog.addLink(event);
+
+                    }
                     this.expireCount++;
                 }
             }
@@ -180,8 +191,14 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event(null, rider, "expire", null, this.getCurrentTime());
-                    this.eventLog.addLink(event);
+
+                    if (this.shouldLogEvents())
+                    {
+
+                        let event = new Event(null, rider, "expire", null, this.getCurrentTime());
+                        this.eventLog.addLink(event);
+
+                    }
                     this.expireCount++;
                 }
             }

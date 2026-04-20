@@ -4,7 +4,7 @@ import Driver from "./models/Driver.js";
 import DispatchEngine from "./core/DispatchEngine.js";
 let spawnInterval;
 let lastSpawnTime;
-const Simulation = new SimulationController();
+let Simulation = new SimulationController();
 let canvas, ctx;
 let riderLength = 0;
 let height = 800;
@@ -57,10 +57,121 @@ const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let spawnBudget = 0;
 let spawnIntergral = 0;
+let eventWrapCache = new WeakMap();
+let eventWrapCacheWidth = -1;
+let cachedEventContentHeight = 0;
+let cachedEventLayoutHead = null;
+let cachedEventLayoutTail = null;
+let cachedEventLayoutSize = -1;
+
+let batchTargetHours = 6;
+let batchTargetSeconds = batchTargetHours * 60 * 60;
+const BATCH_FIXED_STEP = 1 / 60;
+const BATCH_STEPS_PER_CHUNK = 5000;
+let batchRunActive = false;
+let batchRunDone = false;
+let batchProgress = 0;
+const batchButtonWidth = 132;
+const batchButtonHeight = 20;
+const batchButtonY = statsHeaderY + 8;
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
 carImg.src = "./assets/car-green.png";
+
+function seedSimulation(driverCount = 10, riderCount = 10)
+{
+    riderLength = 0;
+    spawnBudget = 0;
+
+    for (let i = 0; i < driverCount; i++)
+    {
+        spawnDriver(i);
+    }
+
+    for (let i = 0; i < riderCount; i++)
+    {
+        spawnRider(riderLength);
+        riderLength += 1;
+    }
+}
+
+function resetSimulationForBatch()
+{
+    Simulation = new SimulationController();
+    Simulation.simSpeed = Simulation.baseSimSpeed;
+    Simulation.pause = 1;
+    Simulation.loggingEnabled = false;
+
+    activeSpeedMultiplier = 1;
+    batchProgress = 0;
+    batchRunDone = false;
+    lastFrameTime = performance.now();
+
+    invalidateEventLayoutCache();
+    seedSimulation(10, 10);
+}
+
+function startBatchRun()
+{
+    if (batchRunActive)
+        return;
+
+    resetSimulationForBatch();
+    batchRunActive = true;
+    activeStatsTab = "stats";
+    runBatchChunk();
+}
+
+function runBatchChunk()
+{
+    if (!batchRunActive)
+        return;
+
+    for (let i = 0; i < BATCH_STEPS_PER_CHUNK; i++)
+    {
+        if (Simulation.time >= batchTargetSeconds)
+            break;
+
+        Simulation.runSim(BATCH_FIXED_STEP);
+
+        if (Simulation.pause == 1)
+            spawnController();
+    }
+
+    batchProgress = Math.min(1, Simulation.time / batchTargetSeconds);
+
+    if (Simulation.time >= batchTargetSeconds)
+    {
+        finishBatchRun();
+        return;
+    }
+
+    setTimeout(runBatchChunk, 0);
+}
+
+function finishBatchRun()
+{
+    batchRunActive = false;
+    batchRunDone = true;
+    batchProgress = 1;
+    Simulation.pause = 0;
+    activeStatsTab = "stats";
+    lastFrameTime = performance.now();
+}
+
+function drawBatchScreen()
+{
+    ctx.fillStyle = "#282828";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px serif";
+    ctx.fillText("Running " + batchTargetHours + " Hour Simulation...", 40, 80);
+
+    ctx.font = "18px serif";
+    ctx.fillText("Progress: " + Math.round(batchProgress * 100) + "%", 40, 120);
+}
 
 function setup()
 {
@@ -72,32 +183,35 @@ function setup()
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
 
-    for (let i = 0; i < 10; i++)
-    {
-        spawnDriver(i);
-    }
-
-    for (let i = 0; i < 10; i++)
-        {
-            spawnRider(i);
-            riderLength += 1;
-        }
+    seedSimulation(10, 10);
     draw();
 }
 
 function draw()
 {
+    if (!batchRunActive)
+    {
+        const now = performance.now();
+        let deltaSeconds = (now - lastFrameTime) / 1000;
+        deltaSeconds = Math.min(deltaSeconds, 0.1);
+        lastFrameTime = now;
+        Simulation.runSim(deltaSeconds);
 
-    const now = performance.now();
-    let deltaSeconds = (now - lastFrameTime) / 1000;
-    deltaSeconds = Math.min(deltaSeconds, 0.1);
-    lastFrameTime = now;
-    Simulation.runSim(deltaSeconds);
+    }
 
-    ctx.fillStyle = "#282828";
+    if (batchRunActive)
+    {
+        drawBatchScreen();
+        requestAnimationFrame(draw);
+        return;
+    }
+
+    ctx.fillStyle = "#282828"
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (!textOnlyMode) {
-        ctx.fillStyle = "#ffffff";
+
+    if (!textOnlyMode)
+    {
+        ctx.fillStyle = "#ffffff"
         ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
         drawGrid(size);
         drawRoute();
@@ -107,11 +221,10 @@ function draw()
 
     displayStats();
 
-    if (Simulation.pause == 1)
-        spawnController()
+    if (Simulation.pause == 1 && !batchRunDone)
+        spawnController();
 
     requestAnimationFrame(draw);
-    
 }
 
 function spawnController()
@@ -402,6 +515,16 @@ function displayStats()
         drawSpeedButtons("settings");
         drawGridSizeButtons();
     }
+    else if (activeStatsTab === "stats")
+    {
+        const batchButtonX = statsPanelX + statsPadding;
+        ctx.fillStyle = "#4f4f4f";
+        ctx.fillRect(batchButtonX, batchButtonY, batchButtonWidth, batchButtonHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "12px serif";
+        ctx.fillText("Run Batch", batchButtonX + 28, batchButtonY + 14);
+        ctx.fillText("Hours: " + batchTargetHours, batchButtonX + batchButtonWidth + 10, batchButtonY + 14);
+    }
 
     let viewportTop = statsViewportTop;
     if (activeStatsTab === "list")
@@ -409,6 +532,9 @@ function displayStats()
     else if (activeStatsTab === "events")
         viewportTop = eventsViewportTop;
     const statsViewportHeight = canvas.height - viewportTop - statsViewportBottomPadding;
+    const wrappedTextMaxWidth = canvas.width - statsPanelX - (statsPadding * 2) - 16;
+    const eventGap = 8;
+
     if (activeStatsTab === "list")
     {
         if (activeListSubTab === "all")
@@ -422,11 +548,16 @@ function displayStats()
     }
     else if (activeStatsTab === "events")
     {
-        const eventCount = Simulation.dispatchEngine.eventLog.size;
-        statsContentHeight = Math.max(1, eventCount) * statsLineHeight;
+        const eventLogList = Simulation.dispatchEngine.eventLog;
+        statsContentHeight = Math.max(
+            1,
+            getCachedEventContentHeight(eventLogList, wrappedTextMaxWidth, normalFont, statsLineHeight, eventGap)
+        );
     }
     else if (activeStatsTab === "stats")
-        statsContentHeight = 16 * statsLineHeight;
+    {
+        statsContentHeight = 20 * statsLineHeight;
+    }
     else
         statsContentHeight = 0;
 
@@ -580,18 +711,39 @@ function displayStats()
     }
     else if (activeStatsTab === "events")
     {
-        let done = maybeDrawLine("Events:", true);
         const eventLogList = Simulation.dispatchEngine.eventLog;
-        if (!done && (!eventLogList || eventLogList.size === 0))
-            maybeDrawLine("No events yet");
-        else if (!done)
+        let cursorY = viewportTop + statsLineHeight - activeScrollY;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = sectionFont;
+        if (cursorY >= viewportTop - statsLineHeight && cursorY <= viewportTop + statsViewportHeight)
+            ctx.fillText("Events:", statsPanelX + statsPadding, cursorY);
+        cursorY += statsLineHeight;
+
+        if (!eventLogList || eventLogList.size === 0)
+        {
+            ctx.font = normalFont;
+            if (cursorY >= viewportTop - statsLineHeight && cursorY <= viewportTop + statsViewportHeight)
+                ctx.fillText("No events yet", statsPanelX + statsPadding, cursorY);
+        }
+        else
         {
             let currEvent = eventLogList.tail;
             while (currEvent !== null)
             {
                 const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
-                const stop = maybeDrawLine(eventText);
-                if (stop)
+                const wrappedLines = getWrappedEventLines(currEvent, eventText, wrappedTextMaxWidth, normalFont);
+                ctx.font = normalFont;
+
+                for (let i = 0; i < wrappedLines.length; i++)
+                {
+                    if (cursorY >= viewportTop - statsLineHeight && cursorY <= viewportTop + statsViewportHeight)
+                        ctx.fillText(wrappedLines[i], statsPanelX + statsPadding, cursorY);
+                    cursorY += statsLineHeight;
+                }
+
+                cursorY += eventGap;
+                if (cursorY > viewportTop + statsViewportHeight)
                     break;
                 currEvent = currEvent.prev;
             }
@@ -603,13 +755,13 @@ function displayStats()
             { label: "Average wait time", value: Math.round(Simulation.averageWaitTime) + " minutes" },
             { label: "Average ride time", value: Math.round(Simulation.averageRideTime) + " minutes"},
             { label: "Expired rides per hour", value: Simulation.averageExpiredPerHour.toFixed(2) + " riders" },
-            { label: "(not) Average percent of busy drivers", value: ((Simulation.driverList.size - Simulation.dispatchEngine.availableCount) / Simulation.driverList.size)*100 + "%" }
+            { label: "Average percent of busy drivers", value: Math.round(Simulation.averageBusy) + "%" }
         ];
         const cardX = statsPanelX + statsPadding;
         const cardWidth = canvas.width - cardX - statsPadding - 8;
         const cardHeight = 72;
         const cardGap = 12;
-        const titleY = viewportTop + 18 - activeScrollY;
+        const titleY = viewportTop + 42 - activeScrollY;
 
         ctx.fillStyle = "#ffffff";
         ctx.font = sectionFont;
@@ -617,7 +769,7 @@ function displayStats()
 
         for (let i = 0; i < statsCards.length; i++)
         {
-            const cardY = viewportTop + 32 + i * (cardHeight + cardGap) - activeScrollY;
+            const cardY = viewportTop + 56 + i * (cardHeight + cardGap) - activeScrollY;
             if (cardY + cardHeight < viewportTop || cardY > viewportTop + statsViewportHeight)
                 continue;
 
@@ -834,6 +986,9 @@ function onStatsPanelMouseDown(event)
     const tabWidth = tabLayout.tabWidth;
     const inTabRow = mouseY >= statsTabY && mouseY <= statsTabY + statsTabHeight;
 
+    if (batchRunActive)
+        return;
+
     if (inTabRow &&
         ((mouseX >= listTabX && mouseX <= listTabX + tabWidth) ||
         (mouseX >= eventsTabX && mouseX <= eventsTabX + tabWidth) ||
@@ -907,6 +1062,7 @@ function onStatsPanelMouseDown(event)
             textOnlyMode = !textOnlyMode;
             statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
             canvas.width = textOnlyMode ? 420 : width + 275;
+            invalidateEventLayoutCache();
             return;
         }
 
@@ -946,7 +1102,112 @@ function onStatsPanelMouseDown(event)
             }
         }
     }
+    else if (activeStatsTab === "stats")
+{
+    const batchButtonX = statsPanelX + statsPadding;
+
+    if (mouseX >= batchButtonX && mouseX <= batchButtonX + batchButtonWidth &&
+        mouseY >= batchButtonY && mouseY <= batchButtonY + batchButtonHeight)
+    {
+        const hoursInput = window.prompt("Enter the number of hours to run:", String(batchTargetHours));
+        if (hoursInput === null)
+            return;
+
+        const parsedHours = Number(hoursInput);
+        if (!Number.isFinite(parsedHours) || parsedHours <= 0)
+            return;
+
+        batchTargetHours = parsedHours;
+        batchTargetSeconds = batchTargetHours * 60 * 60;
+        startBatchRun();
+        return;
+    }
 }
+
+
+}
+
+
+function invalidateEventLayoutCache()
+{
+    eventWrapCache = new WeakMap();
+    eventWrapCacheWidth = -1;
+    cachedEventContentHeight = 0;
+    cachedEventLayoutHead = null;
+    cachedEventLayoutTail = null;
+    cachedEventLayoutSize = -1;
+}
+
+function getWrappedEventLines(eventNode, eventText, maxWidth, font)
+{
+    if (eventWrapCacheWidth !== maxWidth)
+    {
+        eventWrapCache = new WeakMap();
+        eventWrapCacheWidth = maxWidth;
+        cachedEventContentHeight = 0;
+        cachedEventLayoutHead = null;
+        cachedEventLayoutTail = null;
+        cachedEventLayoutSize = -1;
+    }
+
+    const cachedWrap = eventWrapCache.get(eventNode);
+    if (cachedWrap && cachedWrap.text === eventText && cachedWrap.font === font)
+        return cachedWrap.lines;
+
+    ctx.font = font;
+    const words = String(eventText).split(" ");
+    const lines = [];
+    let currentLine = "";
+
+    for (let i = 0; i < words.length; i++)
+    {
+        const testLine = currentLine === "" ? words[i] : currentLine + " " + words[i];
+        if (ctx.measureText(testLine).width <= maxWidth || currentLine === "")
+            currentLine = testLine;
+        else
+        {
+            lines.push(currentLine);
+            currentLine = words[i];
+        }
+    }
+
+    if (currentLine !== "")
+        lines.push(currentLine);
+
+    const wrappedLines = lines.length > 0 ? lines : [""];
+    eventWrapCache.set(eventNode, { text: eventText, font, lines: wrappedLines });
+    return wrappedLines;
+}
+
+function getCachedEventContentHeight(eventLogList, maxWidth, font, lineHeight, eventGap)
+{
+    if (!eventLogList || eventLogList.size === 0)
+        return 2 * lineHeight;
+
+    if (
+        cachedEventLayoutHead === eventLogList.head &&
+        cachedEventLayoutTail === eventLogList.tail &&
+        cachedEventLayoutSize === eventLogList.size &&
+        eventWrapCacheWidth === maxWidth
+    )
+        return cachedEventContentHeight;
+
+    let eventContentHeight = lineHeight;
+    let currEvent = eventLogList.tail;
+    while (currEvent !== null)
+    {
+        const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+        eventContentHeight += (getWrappedEventLines(currEvent, eventText, maxWidth, font).length * lineHeight) + eventGap;
+        currEvent = currEvent.prev;
+    }
+
+    cachedEventContentHeight = eventContentHeight;
+    cachedEventLayoutHead = eventLogList.head;
+    cachedEventLayoutTail = eventLogList.tail;
+    cachedEventLayoutSize = eventLogList.size;
+    return cachedEventContentHeight;
+}
+
 //AI IMPLEMENTATION DONE ^
 function drawRoute()
 {
