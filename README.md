@@ -9,6 +9,7 @@ This is our ride-share dispatch simulation project for ICS4U. The system uses cu
 - [I/O History](docs/IO_HISTORY.md)
 - [UML](assets/UML.jpg)
 - [AI Usage Log](docs/AI_USAGE_LOG.md)
+- [Reflection](docs/REFLECTION.md)
 
 ## UML Diagram
 
