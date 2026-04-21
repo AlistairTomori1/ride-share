@@ -28,6 +28,10 @@ This document records how AI assistance was used during development of the ride-
    - AI helped troubleshoot a bug in `spawnRider()` where ride requests could spawn incorrectly when the grid size was changed to `5` or `10`.
    - AI suggested using a `do { } while ()` loop to repeatedly generate positions until a valid location was found.
 
+7. **Documentation formatting**
+   - AI helped improve the formatting and presentation of project documentation files.
+   - This included support with organizing the daily log, AI usage log, project plan, I/O history, and README links so the submission documents were clearer and more professional.
+
 ## Notes
 
 - AI was used mainly for debugging help, UI support, and documentation support.

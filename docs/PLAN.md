@@ -1,157 +1,158 @@
-Phase 1 – Core Architecture (Checkpoint 1)
+# Project Plan
 
-Objective:
-Implement and test Node and LinkedList classes.
-Define Driver and RideRequest models.
-Demonstrate two functioning linked lists.
+This document outlines the original project plan, task division, workflow, and success criteria for the ride-share dispatch simulation.
 
-Alistair Responsibilities:
-	•	Finalize UML in DESIGN_DOC.md
-	•	Design matching algorithm pseudocode
-	•	Create DispatchEngine class skeleton
-	•	Define composite scoring framework
-	•	Assist with LinkedList edge case testing
+## Phase 1: Core Architecture
 
-James Responsibilities:
-	•	Implement Node class
-	•	Implement LinkedList class:
-	•	insert()
-	•	remove()
-	•	search()
-	•	traverse()
-	•	size()
-	•	Test LinkedList functionality independently (console testing)
-	•	Implement Driver class
-	•	Implement RideRequest class
-	•	Implement Event class
+**Checkpoint:** Checkpoint 1
 
-Shared:
-	•	Validate LinkedList correctness
-	•	Test two independent linked lists (drivers and requests)
-	•	Create basic console-based simulation (no visualization yet)
+**Objective**
+- Implement and test the `Node` and `LinkedList` classes.
+- Define the `Driver` and `RideRequest` models.
+- Demonstrate two functioning linked lists.
 
-Deliverable:
-Working data structures + UML + algorithm plan.
+**Alistair Responsibilities**
+- Finalize the UML in `DESIGN_DOC.md`
+- Design matching algorithm pseudocode
+- Create the `DispatchEngine` class skeleton
+- Define the composite scoring framework
+- Assist with `LinkedList` edge-case testing
 
-⸻
+**James Responsibilities**
+- Implement the `Node` class
+- Implement the `LinkedList` class
+- Implement `insert()`
+- Implement `remove()`
+- Implement `search()`
+- Implement `traverse()`
+- Implement `size()`
+- Test `LinkedList` functionality independently with console testing
+- Implement the `Driver` class
+- Implement the `RideRequest` class
+- Implement the `Event` class
 
-Phase 2 – Matching Engine (Checkpoint 2)
+**Shared Tasks**
+- Validate `LinkedList` correctness
+- Test two independent linked lists for drivers and ride requests
+- Create a basic console-based simulation before visualization
 
-Objective:
-Implement composite scoring algorithm.
-Implement driver state transitions.
-Implement request expiration.
-Implement event logging system.
-Analyze time complexity.
+**Deliverable**
+- Working data structures, UML, and algorithm plan
 
-Alistair Responsibilities:
-	•	Implement DispatchEngine.matchDriversToRequests()
-	•	Implement calculateScore() with:
-	•	distance factor
-	•	capacity factor
-	•	amenity prioritization
-	•	Design and document scoring weights
-	•	Write Big-O analysis in TIME_COMPLEXITY.md
-	•	Analyze tradeoffs of LinkedList vs Array
+## Phase 2: Matching Engine
 
-James Responsibilities:
-	•	Implement driver state transitions:
-AVAILABLE -> EN_ROUTE -> OCCUPIED -> AVAILABLE
-	•	Implement request expiration logic
-	•	Implement event logging LinkedList
-	•	Ensure events are logged for:
-	•	match
-	•	expiration
-	•	state changes
+**Checkpoint:** Checkpoint 2
 
-Shared:
-	•	Test matching logic in console
-	•	Verify expired requests are removed
-	•	Validate event log traversal
+**Objective**
+- Implement the composite scoring algorithm
+- Implement driver state transitions
+- Implement request expiration
+- Implement the event logging system
+- Analyze time complexity
 
-Deliverable:
-Fully functional console-based dispatch system with event tracking and documented time complexity.
+**Alistair Responsibilities**
+- Implement `DispatchEngine.matchDriversToRequests()`
+- Implement `calculateScore()` with:
+  - distance factor
+  - capacity factor
+  - amenity prioritization
+- Design and document scoring weights
+- Write Big-O analysis in `TIME_COMPLEXITY.md`
+- Analyze tradeoffs of `LinkedList` vs. array-based approaches
 
-⸻
+**James Responsibilities**
+- Implement driver state transitions:
+  - `AVAILABLE -> EN_ROUTE -> OCCUPIED -> AVAILABLE`
+- Implement request expiration logic
+- Implement the event logging `LinkedList`
+- Ensure events are logged for:
+  - matches
+  - expirations
+  - state changes
 
-Phase 3 – Full Simulation (Checkpoint 3)
+**Shared Tasks**
+- Test matching logic in the console
+- Verify expired requests are removed correctly
+- Validate event log traversal
 
-Objective:
-Integrate real-time visualization using P5.js.
-Add adjustable simulation speed.
-Display drivers, requests, matches, and expired rides visually.
+**Deliverable**
+- Fully functional console-based dispatch system with event tracking and documented time complexity
 
-James Responsibilities:
-	•	Implement sketch.js rendering logic
-	•	Draw drivers (color-coded by state)
-	•	Draw ride requests
-	•	Draw match connections
-	•	Implement adjustable simulation speed control
-	•	Visual feedback for expired requests
+## Phase 3: Full Simulation
 
-Alistair Responsibilities:
-	•	Integrate DispatchEngine with SimulationController
-	•	Ensure logic and rendering remain separated
-	•	Optimize when matching runs (avoid unnecessary recomputation)
-	•	Finalize complexity discussion
-	•	Write reflection on limitations and scalability
+**Checkpoint:** Checkpoint 3
 
-Shared:
-	•	System integration testing
-	•	Debug simulation behavior
-	•	Prepare final submission documentation
-	•	Maintain AI usage log
+**Objective**
+- Integrate real-time visualization using `p5.js`
+- Add adjustable simulation speed
+- Display drivers, requests, matches, and expired rides visually
 
-Deliverable:
-Complete real-time simulation demonstrating Level 3 features.
+**James Responsibilities**
+- Implement `sketch.js` rendering logic
+- Draw drivers with state-based coloring
+- Draw ride requests
+- Draw match connections
+- Implement adjustable simulation speed control
+- Add visual feedback for expired requests
 
-⸻
+**Alistair Responsibilities**
+- Integrate `DispatchEngine` with `SimulationController`
+- Ensure logic and rendering remain separated
+- Optimize when matching runs to avoid unnecessary recomputation
+- Finalize the complexity discussion
+- Write the reflection on limitations and scalability
 
-GitHub Workflow
+**Shared Tasks**
+- Perform system integration testing
+- Debug simulation behavior
+- Prepare final submission documentation
+- Maintain the AI usage log
 
-Branches:
-	•	main – stable milestones only
-	•	dev – active development
-	•	feature branches as needed:
-	•	feature/linkedlist
-	•	feature/matching-engine
-	•	feature/visualization
+**Deliverable**
+- Complete real-time simulation demonstrating Level 3 features
 
-Requirements:
-	•	Minimum 15 meaningful commits
-	•	Clear commit messages
-	•	Pull requests for major merges
-	•	Both partners review code before merging to main
+## GitHub Workflow
 
-⸻
+**Branches**
+- `main`: stable milestones only
+- `dev`: active development
+- feature branches as needed:
+  - `feature/linkedlist`
+  - `feature/matching-engine`
+  - `feature/visualization`
 
-Division of Complexity
+**Requirements**
+- Minimum of 15 meaningful commits
+- Clear commit messages
+- Pull requests for major merges
+- Both partners review code before merging to `main`
 
-Alistair:
-	•	Algorithm design
-	•	Scoring logic
-	•	Time complexity analysis
-	•	System architecture decisions
+## Division of Complexity
 
-James:
-	•	LinkedList implementation
-	•	Driver and request state handling
-	•	Full visualization system
-	•	Event log implementation
+**Alistair**
+- Algorithm design
+- Scoring logic
+- Time complexity analysis
+- System architecture decisions
 
-Workload is balanced by:
-	•	Complexity (algorithm vs implementation)
-	•	Code volume (visualization is substantial)
-	•	Documentation responsibilities
+**James**
+- `LinkedList` implementation
+- Driver and request state handling
+- Full visualization system
+- Event log implementation
 
-⸻
+**Workload Balance**
+- Complexity balance: algorithm design vs. implementation
+- Code volume balance: visualization work is substantial
+- Shared documentation responsibilities
 
-Success Criteria for Level 3
-	•	Custom LinkedList fully functional
-	•	Composite scoring implemented
-	•	Amenities influence matching
-	•	Driver state lifecycle handled
-	•	Request expiration working
-	•	Event log maintained using LinkedList
-	•	Adjustable simulation speed
-	•	Big-O complexity discussion included
+## Success Criteria for Level 3
+
+- Custom `LinkedList` fully functional
+- Composite scoring implemented
+- Amenities influence matching
+- Driver state lifecycle handled
+- Request expiration working
+- Event log maintained using a `LinkedList`
+- Adjustable simulation speed
+- Big-O complexity discussion included
