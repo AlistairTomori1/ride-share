@@ -15,14 +15,6 @@ This is our ride-share dispatch simulation project for ICS4U. The system uses cu
 
 ![UML Diagram](assets/UML.jpg)
 
-## Requirements
-
-- `git`
-- `python3`
-- A modern browser such as Chrome, Edge, or Safari
-
-There is no build step and no package install step.
-
 ## Download and Run
 
 Desktop builds are available in the GitHub Releases section.
@@ -58,6 +50,14 @@ If that happens:
 
 <details>
 <summary>Show manual setup steps</summary>
+
+**Requirements**
+
+- `git`
+- `python3`
+- A modern browser such as Chrome, Edge, or Safari
+
+There is no build step and no package install step.
 
 1. Clone the repository:
 
