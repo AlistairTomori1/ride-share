@@ -4,12 +4,13 @@ import Event from "../models/Event.js";
 import ExpiredList from "../models/ExpiredList.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList, priorityList, eventLog)
+    constructor(DriverList, RiderList, priorityList, eventLog, getCurrentTime, shouldLogEvents)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
         this.priorityList = priorityList;
         this.eventLog = eventLog;
+        this.getCurrentTime = getCurrentTime;
         this.expiredList = new LinkedList();
         this.scoring = new Scoring();
         this.totalProfits = 0;
@@ -17,6 +18,23 @@ export default class DispatchEngine
         this.expireCount = 0;
         this.availableCount = 0;
         this.waitingCount = 0;
+        this.shouldLogEvents = shouldLogEvents;
+        this.fullEventLogLines = [];
+        this.rideAmount = 0;
+    }
+
+    //adds each event to log
+    recordEvent(event)
+    {
+        const exportLine = "[" + event.time + "] " + event.event;
+        this.fullEventLogLines.push(exportLine);
+
+        if (this.shouldLogEvents())
+        {
+            this.eventLog.addLink(event);
+            while (this.eventLog.size > 200)
+                this.eventLog.remove(this.eventLog.head);
+        }
     }
 
     update(speedMultiplier = 1)
@@ -27,6 +45,7 @@ export default class DispatchEngine
     }
 
 
+    //goes through each driver and assignes one to a waiting rider
     matchDriverToSingle(rider)
     {
         let currDriver = this.DriverList.head;
@@ -55,6 +74,7 @@ export default class DispatchEngine
         return;
     }
 
+    //goes through each rider and assignes one to a driver
     matchRiderToSingle(driver)
     {
         let currRider = this.priorityList.head;
@@ -105,6 +125,7 @@ export default class DispatchEngine
         return;
     }
 
+    //actually matching function
     assignDriver(rider, driver)
     {
         driver.state = "PICKING UP";
@@ -114,9 +135,15 @@ export default class DispatchEngine
         rider.assignedDriver = driver;
         rider.state = "MATCHED";
         driver.busyTimer = 5;
-        let event = new Event(driver, rider, "assigned");
-        this.eventLog.addLink(event);
+
+        if (this.shouldLogEvents())
+        {
+            let event = new Event(driver, rider, "assigned", null, this.getCurrentTime());
+            this.recordEvent(event);
+        }
     }
+
+    
     updateBusyDrivers()
     {
         let curr = this.DriverList.head;
@@ -139,6 +166,7 @@ export default class DispatchEngine
         }
     }
 
+    //this checks the rider location to update its state
     updateWaitingRiders(speedMultiplier = 1)
     {
         let curr = this.RiderList.head;
@@ -156,9 +184,12 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event(null, rider, "expire");
-                    console.log("succsess")
-                    this.eventLog.addLink(event);
+
+                    if (this.shouldLogEvents())
+                    {
+                        let event = new Event(null, rider, "expire", null, this.getCurrentTime());
+                        this.recordEvent(event);
+                    }
                     this.expireCount++;
                 }
             }
@@ -180,8 +211,12 @@ export default class DispatchEngine
                     rider.state = "EXPIRED";
                     this.trackExpiredRider(rider);
                     this.waitingCount--;
-                    let event = new Event(null, rider, "expire");
-                    this.eventLog.addLink(event);
+
+                    if (this.shouldLogEvents())
+                    {
+                        let event = new Event(null, rider, "expire", null, this.getCurrentTime());
+                        this.recordEvent(event);
+                    }
                     this.expireCount++;
                 }
             }
@@ -189,12 +224,14 @@ export default class DispatchEngine
         }
     }
 
+    //find the profite from each ride
     calculateProfit(rider)
     {
         let baseProfit = Math.floor(rider.cost / 10);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 
+    //makes expired rider list
     trackExpiredRider(rider)
     {
         this.expiredList.addLink(new ExpiredList(rider));
@@ -203,3 +240,4 @@ export default class DispatchEngine
     }
 
 }
+

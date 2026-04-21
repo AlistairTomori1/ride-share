@@ -7,23 +7,80 @@ export default class SimulationController
 {
     constructor()
     {
+        this.loggingEnabled = true;
         this.driverList = new LinkedList();
         this.riderList = new LinkedList();
         this.eventLog = new LinkedList();
         this.priorityList = new LinkedList();
-        this.dispatchEngine = new DispatchEngine(this.driverList, this.riderList, this.priorityList, this.eventLog);
         this.time = 0;
+        this.startDate = new Date(2026, 0, 1, 0, 0, 0, 0);
+        this.dispatchEngine = new DispatchEngine(
+            this.driverList,
+            this.riderList,
+            this.priorityList,
+            this.eventLog,
+            () => this.getFormattedSimTime(),
+            () => this.loggingEnabled
+        );
+        this.initializeEventExportLog();
         //normal sim speed is 100
         this.simSpeed = 100;
         this.baseSimSpeed = this.simSpeed;
         this.pause = 1;
+        this.averageWaitTime = 0;
+        this.averageWaitTimeCount = 0;
+        this.totalWaitTime = 0;
+        this.averageExpiredPerHour = 0;
+        this.averageRideTime = 0;
+        this.averageRideTimeCount = 0;
+        this.totalRideTime = 0;
+        this.busyRatioTimeTotal = 0;
+        this.averageBusy = 0;
+        this.cachedFormattedSimTime = "";
+        this.cachedFormattedMinute = -1;
+
     }
 
+    getSimDate()
+    {
+        return new Date(this.startDate.getTime() + this.time * 1000);
+    }
+
+    //this gets the time
+    getFormattedSimTime()
+    {
+        const currentMinute = Math.floor(this.time / 60);
+        if (currentMinute !== this.cachedFormattedMinute)
+        {
+            this.cachedFormattedMinute = currentMinute;
+            this.cachedFormattedSimTime = this.getSimDate().toLocaleString([], {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true
+            });
+        }
+        return this.cachedFormattedSimTime;
+    }
+
+    initializeEventExportLog()
+    {
+        this.dispatchEngine.fullEventLogLines = [];
+        this.dispatchEngine.fullEventLogLines.push("Ride Share Simulation Event Log");
+        this.dispatchEngine.fullEventLogLines.push("Start time: " + this.getFormattedSimTime());
+        this.dispatchEngine.fullEventLogLines.push("");
+    }
+
+    //this adds a driver to the driver list
     addDriver(driver)
     {
         this.driverList.addLink(driver);
         this.dispatchEngine.availableCount++;
     }
+
+    //this adds the rider into the right list
     addRider(rider)
     {
         this.dispatchEngine.waitingCount++;
@@ -38,23 +95,35 @@ export default class SimulationController
             this.dispatchEngine.matchDriverToSingle(rider);
         }
     }
-    tick()
+
+    //this is the functions that run each tick
+    tick(deltaSeconds)
     {
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
-        this.time += speedMultiplier;
+        const clockSeconds = deltaSeconds * speedMultiplier * 60;
+        this.time += clockSeconds;
         this.dispatchEngine.update(speedMultiplier);
-        this.moveDrivers();
+        this.moveDrivers(deltaSeconds);
         this.moveRiders();
         this.updateSurge();
         this.expireOldEvents();
+
+        let simHoursElapsed = this.time / 3600;
+        this.averageExpiredPerHour = simHoursElapsed > 0 ? this.dispatchEngine.expireCount / simHoursElapsed : 0;
+
+        let totalDrivers = this.driverList.size;
+        let busyDrivers = totalDrivers - this.dispatchEngine.availableCount;
+        let busyRatio = totalDrivers > 0 ? busyDrivers / totalDrivers : 0;
+        this.busyRatioTimeTotal += busyRatio * clockSeconds;
+        this.averageBusy = this.time > 0 ? (this.busyRatioTimeTotal / this.time) * 100 : 0;
+
     }
     
-    runSim()
+    //this runs if sim is unpaused
+    runSim(deltaSeconds)
     {
         if (this.pause == 1)
-            this.tick();
-        else
-            return;
+            this.tick(deltaSeconds);
     }
     //AI implemented 
     moveValueTowards(current, target, step)
@@ -70,10 +139,12 @@ export default class SimulationController
         return Math.abs(current - target) < 0.0001;
     }
     //AI implementaion end ^
-    moveDrivers()
+
+    //this moves the drivers and does driver states
+    moveDrivers(deltaSeconds)
     {
         let curr = this.driverList.head;
-        let speed = this.simSpeed/50;
+        let speed = (this.simSpeed/50) * deltaSeconds * 60;
         while (curr !== null)
         {
             if (curr.state == "PICKING UP")
@@ -103,9 +174,17 @@ export default class SimulationController
                 {
                     curr.assignedRider.state = "PICKED UP";
                     curr.state = "DROPPING OFF";
-                    let event = new Event(curr, curr.assignedRider, "pickup");
+                    let waitMinutes = (this.getSimDate() - curr.assignedRider.spawnTime) / 60000;
+                    curr.assignedRider.pickupTime = this.getSimDate();
+                    this.totalWaitTime += waitMinutes;
+                    this.averageWaitTimeCount++;
+                    this.averageWaitTime = this.totalWaitTime / this.averageWaitTimeCount;
 
-                    this.dispatchEngine.eventLog.addLink(event);
+                    if (this.loggingEnabled)
+                    {
+                        let event = new Event(curr, curr.assignedRider, "pickup", null, this.getFormattedSimTime(), waitMinutes);
+                        this.dispatchEngine.recordEvent(event);
+                    }
                 }
             }
 
@@ -139,10 +218,21 @@ export default class SimulationController
                     {
                         droppedRider.state = "DROPPED OFF";
                         droppedRider.assignedDriver = null;
-                        let event = new Event(curr, droppedRider, "dropoff");
-                        this.dispatchEngine.eventLog.addLink(event);
+
+                        let RideMinutes = (this.getSimDate() - curr.assignedRider.pickupTime) / 60000;
+                        this.totalRideTime += RideMinutes;
+                        this.averageRideTimeCount++;
+                        this.averageRideTime = this.totalRideTime / this.averageRideTimeCount;
+
+                        if (this.loggingEnabled)
+                        {
+                            let event = new Event(curr, droppedRider, "dropoff", null, this.getFormattedSimTime(), RideMinutes);
+                            this.dispatchEngine.recordEvent(event);
+                        }
+
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
+                        this.dispatchEngine.rideAmount++;
                         this.dispatchEngine.totalProfits += tripProfit;
                     }
                     curr.assignedRider = null;
@@ -156,6 +246,7 @@ export default class SimulationController
         }
     }
 
+    //this moves the rider and does rider states
     moveRiders()
     {
         let curr = this.riderList.head;
@@ -189,6 +280,7 @@ export default class SimulationController
         }
     }
 
+    //surge controller
     updateSurge()
     {
         let ratio = (this.riderList.size + this.priorityList.size) / Math.max(1, this.driverList.size);
@@ -198,8 +290,12 @@ export default class SimulationController
         if (nextSurge !== this.dispatchEngine.surgeMultiplier)
         {
             this.dispatchEngine.surgeMultiplier = nextSurge;
-            let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2));
-            this.dispatchEngine.eventLog.addLink(event);
+
+            if (this.loggingEnabled)
+            {
+                let event = new Event(null, null, "surge", this.dispatchEngine.surgeMultiplier.toFixed(2), this.getFormattedSimTime());
+                this.dispatchEngine.recordEvent(event);
+            }
         }
     }
 

@@ -74,3 +74,12 @@ Alistair - Added Refractoring document.
 April 14 2026:
 Alistair - Stage 2 interview.
 James - Stage 2 interview.
+
+April 15 2026:
+Alistair - made it so we have a real clock instead of just seconds since start. added date and time to each event.
+
+April 16 2026:
+Alistair - added stats tab with varius stats.
+
+April 20 2026:
+Alistair - added instant sim run as well as more stats.
