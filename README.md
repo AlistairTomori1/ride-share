@@ -4,15 +4,15 @@ This project is a browser-based ride-share dispatch simulation. It uses custom l
 
 ## Project Documents
 
-- [Daily Logs](DAILY_LOG.md)
-- [Project Plan](PLAN.md)
-- [I/O History](IO_HISTORY.md)
-- [UML](../assets/UML.jpg)
-- [AI Usage Log](AI_USAGE_LOG.md)
+- [Daily Logs](docs/DAILY_LOG.md)
+- [Project Plan](docs/PLAN.md)
+- [I/O History](docs/IO_HISTORY.md)
+- [UML](assets/UML.jpg)
+- [AI Usage Log](docs/AI_USAGE_LOG.md)
 
 ## UML Diagram
 
-![UML Diagram](../assets/UML.jpg)
+![UML Diagram](assets/UML.jpg)
 
 ## Requirements
 
