@@ -11,3 +11,4 @@
 9. added instant sim run.
 10. added stats tab to see average wait time, average ride time, expired rides per hour, average percent of busy drivers, total rides done, total earnings. 
 11. added adjustable inputes like: speed, grid size, driver count, target busy percent.
+12. Made the spawn controller more accurate

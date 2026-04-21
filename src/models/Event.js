@@ -12,6 +12,8 @@ export default class Event{
         
     }
 
+
+    //outputs a formatted event
     addEvent()
     {
         if (this.type == "expire")

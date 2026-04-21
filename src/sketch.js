@@ -70,6 +70,7 @@ carImg.src = "./assets/car-green.png";
 
 function setup()
 {
+    //define the canvase and start draw loop
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
     canvas.width = textOnlyMode ? 420 : width + 275;
@@ -86,6 +87,7 @@ function draw()
 {
     if (!batchRunActive && !batchRunDone)
     {
+        //real time sim run
         const now = performance.now();
         let frameSeconds = (now - lastFrameTime) / 1000;
         frameSeconds = Math.min(frameSeconds, 0.1);
@@ -111,6 +113,7 @@ function draw()
             simAccumulator = 0;
     }
 
+    //batch run
     if (batchRunActive)
     {
         drawBatchScreen();
@@ -128,6 +131,7 @@ function draw()
     ctx.fillStyle = "#282828"
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    //text only mode
     if (!textOnlyMode)
     {
         ctx.fillStyle = "#ffffff"
@@ -142,7 +146,7 @@ function draw()
 
     requestAnimationFrame(draw);
 }
-
+//decides wether or not to spawn a rider
 function spawnController(deltaSeconds)
 {
     const driverCount = Simulation.driverList.size;
@@ -177,6 +181,7 @@ function spawnController(deltaSeconds)
     }
 }
 
+//add a rider with their own properties
 function spawnRider(id)
 {
     let location;
@@ -209,7 +214,7 @@ function spawnRider(id)
 
     Simulation.addRider(request);
 }
-
+//get the rider count
 function getCount()
 {
  let chance = Math.random();
@@ -231,6 +236,7 @@ function getCount()
 
 }
 
+//spawn a driver with their properties
 function spawnDriver(id)
 {
 
@@ -254,7 +260,7 @@ function spawnDriver(id)
 
     Simulation.addDriver(driver);
 }
-
+//gets their capacity
 function getCapacity()
 {
  let chance = Math.random();
@@ -267,6 +273,7 @@ function getCapacity()
     return 10;
 }
 
+//runs to daw the grid
 function drawGrid(size)
 {
     ctx.strokeStyle = '#3c3c3c'; 
@@ -287,6 +294,7 @@ function drawGrid(size)
     }
 }
 
+//draw the route for each trip
 function drawRoute()
 {
     let curr = Simulation.driverList.head;
@@ -302,6 +310,7 @@ function drawRoute()
     }
 }
 
+//this displays the drivers
 function drawDrivers()
 {
     let curr = Simulation.driverList.head;
@@ -325,7 +334,7 @@ function drawDrivers()
         }
 
 }
-
+//this displays each rider
 function drawRiderList(list)
 {
     let curr = list.head;
@@ -360,6 +369,7 @@ function drawRiders()
     drawRiderList(Simulation.priorityList);
 }
 
+//event log download
 function downloadEventLog()
 {
     const text = Simulation.dispatchEngine.fullEventLogLines.join("\n");

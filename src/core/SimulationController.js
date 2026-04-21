@@ -46,6 +46,7 @@ export default class SimulationController
         return new Date(this.startDate.getTime() + this.time * 1000);
     }
 
+    //this gets the time
     getFormattedSimTime()
     {
         const currentMinute = Math.floor(this.time / 60);
@@ -72,11 +73,14 @@ export default class SimulationController
         this.dispatchEngine.fullEventLogLines.push("");
     }
 
+    //this adds a driver to the driver list
     addDriver(driver)
     {
         this.driverList.addLink(driver);
         this.dispatchEngine.availableCount++;
     }
+
+    //this adds the rider into the right list
     addRider(rider)
     {
         this.dispatchEngine.waitingCount++;
@@ -91,6 +95,8 @@ export default class SimulationController
             this.dispatchEngine.matchDriverToSingle(rider);
         }
     }
+
+    //this is the functions that run each tick
     tick(deltaSeconds)
     {
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
@@ -113,6 +119,7 @@ export default class SimulationController
 
     }
     
+    //this runs if sim is unpaused
     runSim(deltaSeconds)
     {
         if (this.pause == 1)
@@ -132,6 +139,8 @@ export default class SimulationController
         return Math.abs(current - target) < 0.0001;
     }
     //AI implementaion end ^
+
+    //this moves the drivers and does driver states
     moveDrivers(deltaSeconds)
     {
         let curr = this.driverList.head;
@@ -237,6 +246,7 @@ export default class SimulationController
         }
     }
 
+    //this moves the rider and does rider states
     moveRiders()
     {
         let curr = this.riderList.head;
@@ -270,6 +280,7 @@ export default class SimulationController
         }
     }
 
+    //surge controller
     updateSurge()
     {
         let ratio = (this.riderList.size + this.priorityList.size) / Math.max(1, this.driverList.size);
