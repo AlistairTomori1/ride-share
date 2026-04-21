@@ -1,16 +1,19 @@
 # Ride Share Simulation
 
-This project is a browser-based ride-share dispatch simulation. It uses custom linked lists to manage drivers, ride requests, expired riders, and the event log.
+This is our ride-share dispatch simulation project for ICS4U. The system uses custom linked lists to manage drivers, ride requests, expired riders, and the visible event log.
 
 ## Project Documents
 
-- [Daily Log](DAILY_LOG.md)
-- [AI Usage](AI_USAGE_LOG.md)
-- [Time Complexity](TIME_COMPLEXITY.md)
+- [Daily Logs](docs/DAILY_LOG.md)
+- [Project Plan](docs/PLAN.md)
+- [I/O History](docs/IO_HISTORY.md)
+- [UML](assets/UML.jpg)
+- [AI Usage Log](docs/AI_USAGE_LOG.md)
+- [Reflection](docs/REFLECTION.md)
 
 ## UML Diagram
 
-![UML Diagram](../assets/UML.jpg)
+![UML Diagram](assets/UML.jpg)
 
 ## Requirements
 
@@ -83,7 +86,7 @@ This tab shows the visual event log with timestamps.
 
 - newest events appear at the top
 - older events move downward
-- the visual linked-list event log is capped at 200 events
+- the visible linked-list event log is capped at 200 events
 
 ### Settings
 
@@ -103,7 +106,7 @@ Notes:
 
 - changing driver count resets the simulation
 - higher target busy ratios make rider spawning more aggressive
-- `120%` intentionally pushes demand above full utilization
+- `120%` is meant to push the system above full utilization by allowing more backlog
 
 ### Stats
 
@@ -142,10 +145,10 @@ After the batch finishes, an end-of-simulation screen appears with:
 
 There are two event log outputs:
 
-- visual event log: shown in the `Events` tab and capped at 200 events
+- visible event log: shown in the `Events` tab and capped at 200 events
 - export event log: full event history used for the downloaded text file
 
-So even after old visual events are removed from the on-screen log, the downloaded file still contains all events recorded during that run.
+That means old visible events can roll off the screen, but the downloaded file still contains the full event history for that run.
 
 ## Simulation Time
 
@@ -162,12 +165,12 @@ Clock behavior:
 - at `0.5X`, 1 real second = 30 simulated seconds
 - at `10X`, 1 real second = 10 simulated minutes
 
-This affects the displayed simulation clock. The movement and dispatch logic still run using the simulation update loop.
+This affects the displayed simulation clock while the movement and dispatch logic continue to run through the update loop.
 
 ## Troubleshooting
 
 - If the page is blank, make sure you started the local server from the project root and opened `http://localhost:8000`.
-- If controls do not seem to respond after a batch run, click `Back to Sim` on the end screen.
+- If controls do not respond after a batch run, click `Back to Sim` on the end screen.
 - If performance drops with very large driver counts, use `Text only mode` or run a batch simulation from the `Stats` tab.
 
 ## Project Files
