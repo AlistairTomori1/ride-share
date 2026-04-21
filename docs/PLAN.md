@@ -1,158 +1,267 @@
 # Project Plan
 
-This document outlines the original project plan, task division, workflow, and success criteria for the ride-share dispatch simulation.
+## Course and Project Context
+
+**Course:** ICS4U - Data Structures and Algorithms  
+**Project:** Ride-Share Dispatch Simulation using Linked Lists  
+**Partners:** Alistair T. and James W.
+
+**Checkpoint Schedule**
+- Checkpoint 1: Wednesday, March 25 at 12:10 PM
+- Checkpoint 2: Friday, April 10 at 12:50 PM
+- Checkpoint 3: Thursday, April 23 at 12:45 PM
+
+## Project Goal
+
+The goal of this project is to build a ride-share dispatch simulation that uses custom linked lists as the primary data structure for storing and updating dynamic simulation data. The project is designed to demonstrate data structure implementation, algorithmic matching logic, simulation modeling, object-oriented programming, time complexity analysis, and professional software development practices.
+
+This project is not a game and is not primarily a UI project. The visualization exists to show the linked-list-based simulation in motion. The core of the project is the correctness of the data structures, dispatch logic, state transitions, and event tracking.
+
+## Final Target
+
+This project is being developed to meet **Level 4 - Inferno** expectations.
+
+### Level 4 Focus
+
+- Medium data set support, including large driver and rider loads
+- Surge-based advanced behavior
+- Professional GitHub workflow with issues, pull requests, and project tracking
+- Performance comparison and refactoring discussion
+- Clear analysis of limitations, scaling tradeoffs, and design decisions
+
+## Core System Requirements
+
+The final system is planned to demonstrate the following:
+
+- Custom `Node` and `LinkedList` implementations
+- Dynamic linked lists for drivers, ride requests, expired riders, and event history
+- Composite dispatch scoring using distance, capacity, and amenities
+- Manhattan distance calculations
+- Driver state transitions through the ride lifecycle
+- Request expiration handling
+- Structured event logging using a linked list
+- Real-time visualization in the browser
+- Adjustable simulation speed
+- Text-only and batch-run modes for larger simulation runs
+- Statistics collection and analysis
+
+## Implemented Feature Plan
+
+### 1. Data Structures
+
+The project is built around linked-list-based storage and traversal.
+
+Planned and implemented structures:
+- `Node`
+- `LinkedList`
+- Driver list
+- Rider list
+- Priority rider list
+- Expired rider list
+- Event log list
+
+These structures support insertions, removals, traversal, and state updates during the simulation.
+
+### 2. Dispatch and Matching Logic
+
+The dispatch system is designed to simulate how a ride-share platform matches riders to drivers.
+
+Planned and implemented logic:
+- Match riders and drivers using a composite score
+- Use Manhattan distance as the distance metric
+- Include passenger count and amenity requirements in scoring
+- Maintain driver availability and state transitions
+- Assign, pick up, transport, and drop off riders
+- Expire unmatched requests
+
+### 3. Simulation Features
+
+The simulation layer is intended to model the system over time rather than only compute isolated matches.
+
+Planned and implemented simulation features:
+- Real-time simulation loop
+- Driver movement on a grid
+- Ride request spawning
+- Configurable simulation speed
+- Pause and resume controls
+- Real simulated date/time clock
+- Surge button for demand spikes
+- Adjustable target busy ratio for rider spawning behavior
+
+### 4. Visualization and Interface
+
+The interface is used to inspect system state and support testing.
+
+Planned and implemented interface features:
+- Visual map with drivers and riders
+- Driver/rider list panel
+- Event log tab
+- Settings tab
+- Stats tab
+- List sub-tabs for filtered views
+- Scrollable text panels
+- Text-only mode
+- Batch-run end screen
+- Downloadable full event log
+
+### 5. Statistics and Analysis
+
+The project includes statistics to support performance review and reflection.
+
+Planned and implemented metrics:
+- Average wait time
+- Average ride time
+- Expired rides per hour
+- Average percent of busy drivers
+- Total rides completed
+- Total earnings
+
+### 6. Large-Load Support
+
+To support Level 4 expectations, the project includes planning and implementation for larger simulation sizes.
+
+Planned large-load support:
+- Text-only mode to remove render overhead
+- Batch simulation mode for long simulation runs
+- Virtualized stats/event rendering
+- Cached counters for available and waiting entities
+- Event log caps for visual performance
+- Refactoring for simpler and more efficient update paths
+
+## Phase Breakdown
 
 ## Phase 1: Core Architecture
 
-**Checkpoint:** Checkpoint 1
+**Focus**
+- Build the linked-list foundation
+- Define the simulation models
+- establish the class relationships and UML
 
-**Objective**
-- Implement and test the `Node` and `LinkedList` classes.
-- Define the `Driver` and `RideRequest` models.
-- Demonstrate two functioning linked lists.
-
-**Alistair Responsibilities**
-- Finalize the UML in `DESIGN_DOC.md`
-- Design matching algorithm pseudocode
-- Create the `DispatchEngine` class skeleton
-- Define the composite scoring framework
-- Assist with `LinkedList` edge-case testing
-
-**James Responsibilities**
-- Implement the `Node` class
-- Implement the `LinkedList` class
-- Implement `insert()`
-- Implement `remove()`
-- Implement `search()`
-- Implement `traverse()`
-- Implement `size()`
-- Test `LinkedList` functionality independently with console testing
-- Implement the `Driver` class
-- Implement the `RideRequest` class
-- Implement the `Event` class
-
-**Shared Tasks**
-- Validate `LinkedList` correctness
-- Test two independent linked lists for drivers and ride requests
-- Create a basic console-based simulation before visualization
-
-**Deliverable**
-- Working data structures, UML, and algorithm plan
+**Primary Deliverables**
+- `Node` and `LinkedList`
+- Driver and rider model classes
+- UML diagram
+- Initial algorithm plan
 
 ## Phase 2: Matching Engine
 
-**Checkpoint:** Checkpoint 2
+**Focus**
+- Build dispatch scoring
+- handle driver state transitions
+- add request expiration and event logging
 
-**Objective**
-- Implement the composite scoring algorithm
-- Implement driver state transitions
-- Implement request expiration
-- Implement the event logging system
-- Analyze time complexity
-
-**Alistair Responsibilities**
-- Implement `DispatchEngine.matchDriversToRequests()`
-- Implement `calculateScore()` with:
-  - distance factor
-  - capacity factor
-  - amenity prioritization
-- Design and document scoring weights
-- Write Big-O analysis in `TIME_COMPLEXITY.md`
-- Analyze tradeoffs of `LinkedList` vs. array-based approaches
-
-**James Responsibilities**
-- Implement driver state transitions:
-  - `AVAILABLE -> EN_ROUTE -> OCCUPIED -> AVAILABLE`
-- Implement request expiration logic
-- Implement the event logging `LinkedList`
-- Ensure events are logged for:
-  - matches
-  - expirations
-  - state changes
-
-**Shared Tasks**
-- Test matching logic in the console
-- Verify expired requests are removed correctly
-- Validate event log traversal
-
-**Deliverable**
-- Fully functional console-based dispatch system with event tracking and documented time complexity
+**Primary Deliverables**
+- Composite matching logic
+- Expiration handling
+- Event log
+- Big-O analysis
 
 ## Phase 3: Full Simulation
 
-**Checkpoint:** Checkpoint 3
+**Focus**
+- Connect the dispatch system to a live simulation
+- visualize the data structures and state changes
+- improve interactivity and debugging visibility
 
-**Objective**
-- Integrate real-time visualization using `p5.js`
-- Add adjustable simulation speed
-- Display drivers, requests, matches, and expired rides visually
+**Primary Deliverables**
+- Browser-based visualization
+- Adjustable speed controls
+- Driver and rider movement
+- Visual inspection of matches, expirations, and events
 
-**James Responsibilities**
-- Implement `sketch.js` rendering logic
-- Draw drivers with state-based coloring
-- Draw ride requests
-- Draw match connections
-- Implement adjustable simulation speed control
-- Add visual feedback for expired requests
+## Phase 4: Level 4 Expansion and Submission Polish
 
-**Alistair Responsibilities**
-- Integrate `DispatchEngine` with `SimulationController`
-- Ensure logic and rendering remain separated
-- Optimize when matching runs to avoid unnecessary recomputation
-- Finalize the complexity discussion
-- Write the reflection on limitations and scalability
+**Focus**
+- Extend the project beyond the base requirements
+- support larger simulation sizes
+- strengthen documentation and workflow evidence
 
-**Shared Tasks**
-- Perform system integration testing
-- Debug simulation behavior
-- Prepare final submission documentation
-- Maintain the AI usage log
+**Primary Deliverables**
+- Surge logic
+- Batch mode and text-only mode
+- Stats and downloadable event log
+- GitHub issue / PR workflow evidence
+- Refactoring and performance discussion
+- Final submission documents
 
-**Deliverable**
-- Complete real-time simulation demonstrating Level 3 features
+## Team Responsibilities
+
+## Alistair
+
+Primary focus areas:
+- System architecture
+- Dispatch and simulation logic
+- Scoring design
+- Performance improvements
+- Statistics and analysis
+- Documentation and submission organization
+
+## James
+
+Primary focus areas:
+- UML and design support
+- Linked-list implementation support
+- Visualization support
+- Class modeling support
+- Testing and project documentation contributions
+
+## Shared Responsibilities
+
+- Debugging and validation
+- Feature testing
+- GitHub workflow
+- Daily logs
+- Submission preparation
 
 ## GitHub Workflow
 
-**Branches**
-- `main`: stable milestones only
-- `dev`: active development
-- feature branches as needed:
-  - `feature/linkedlist`
-  - `feature/matching-engine`
-  - `feature/visualization`
+The project uses GitHub as part of the development process.
 
-**Requirements**
-- Minimum of 15 meaningful commits
-- Clear commit messages
-- Pull requests for major merges
-- Both partners review code before merging to `main`
+Planned workflow:
+- Use issues to track tasks and feature work
+- Use pull requests for major changes
+- Use a shared GitHub Project board to organize progress
+- Maintain meaningful commit history
+- Keep supporting documents in the repository for submission evidence
 
-## Division of Complexity
+This supports the course expectation of using professional development practices and collaborative tools.
 
-**Alistair**
-- Algorithm design
-- Scoring logic
+## Success Criteria
+
+The final project should clearly show:
+
+- Correct custom linked-list implementation
+- Correct dispatch and state-transition logic
+- Event logging using a linked list
+- Time-based request expiration
+- Manhattan-distance-based ride dispatch
+- Modular object-oriented code organization
+- Real-time simulation and visualization
+- Adjustable speed and control features
+- Clear time complexity analysis
+- Professional documentation and AI transparency
+- Level 4 features, including surge behavior, large-load support, and GitHub workflow evidence
+
+## Final Submission Checklist
+
+The final submission should include:
+
+- Complete working simulation
+- Source code repository link
+- Daily logs
+- Project plan
+- I/O history
+- UML
+- AI usage log
 - Time complexity analysis
-- System architecture decisions
+- Reflection on limitations and future improvements
 
-**James**
-- `LinkedList` implementation
-- Driver and request state handling
-- Full visualization system
-- Event log implementation
+## Project Reflection Direction
 
-**Workload Balance**
-- Complexity balance: algorithm design vs. implementation
-- Code volume balance: visualization work is substantial
-- Shared documentation responsibilities
+The final reflection should explain:
 
-## Success Criteria for Level 3
-
-- Custom `LinkedList` fully functional
-- Composite scoring implemented
-- Amenities influence matching
-- Driver state lifecycle handled
-- Request expiration working
-- Event log maintained using a `LinkedList`
-- Adjustable simulation speed
-- Big-O complexity discussion included
+- what data structures and algorithms were most important
+- where linked lists worked well
+- where performance limitations appeared under large loads
+- what optimizations and refactors improved scalability
+- how the project demonstrates Level 4 expectations
