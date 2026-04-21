@@ -133,7 +133,7 @@ function spawnController(deltaSeconds)
     const controllerSeconds = deltaSeconds * 60 * (Simulation.simSpeed / Simulation.baseSimSpeed);
     const waitPerDriver = Simulation.dispatchEngine.waitingCount / driverCount;
     const completionRate = (Simulation.dispatchEngine.rideAmount - lastCompletedRideCount) / controllerSeconds;
-    const desiredWaitPerDriver = targetBusyRatio <= 0.85 ? 0.01 : 0.01 + ((targetBusyRatio - 0.85) * 0.60);
+    const desiredWaitPerDriver = targetBusyRatio <= 1 ? 0.005 : (targetBusyRatio - 1) * 0.30;
     const busyError = (Math.min(targetBusyRatio, 1)) - ((driverCount - Simulation.dispatchEngine.availableCount) / driverCount);
 
     completionRateEma += (completionRate - completionRateEma) * 0.10;
@@ -144,10 +144,10 @@ function spawnController(deltaSeconds)
     let rate = completionRateEma;
     rate += busyError * driverCount * 0.45;
     rate += busyErrorIntegral * driverCount * 0.015;
-    rate += (desiredWaitPerDriver - waitPerDriver) * driverCount * 0.35;
+    rate += (desiredWaitPerDriver - waitPerDriver) * driverCount * 0.20;
 
-    if (waitPerDriver > desiredWaitPerDriver + 0.08)
-        rate -= (waitPerDriver - (desiredWaitPerDriver + 0.08)) * driverCount * 2.0;
+    if (waitPerDriver > desiredWaitPerDriver + 0.03)
+        rate -= (waitPerDriver - (desiredWaitPerDriver + 0.03)) * driverCount * 2.8;
 
     rate = Math.max(0, Math.min(rate, driverCount * 0.5));
     spawnRateEma += (rate - spawnRateEma) * 0.20;
