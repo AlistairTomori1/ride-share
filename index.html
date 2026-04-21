@@ -3,10 +3,80 @@
 <head>
     <title>Simulation</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.js"></script>
+    <style>
+        #inputModal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1000;
+        }
+
+        #inputModalBox {
+            width: 320px;
+            padding: 18px;
+            background: #1f1f1f;
+            border: 2px solid #5a5a5a;
+            border-radius: 10px;
+            color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        #inputModalTitle {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #inputModalField {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #777777;
+            border-radius: 6px;
+            background: #2d2d2d;
+            color: #ffffff;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        #inputModalButtons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        #inputModalButtons button {
+            min-width: 72px;
+            padding: 8px 12px;
+            border: 1px solid #7a7a7a;
+            border-radius: 6px;
+            background: #3a3a3a;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #inputModalButtons button:hover {
+            background: #4a4a4a;
+        }
+    </style>
 </head>
 <body>
 
 <canvas id="simCanvas"></canvas>
+<div id="inputModal">
+    <div id="inputModalBox">
+        <h3 id="inputModalTitle"></h3>
+        <input id="inputModalField" type="number" />
+        <div id="inputModalButtons">
+            <button id="inputModalCancel" type="button">Cancel</button>
+            <button id="inputModalOk" type="button">OK</button>
+        </div>
+    </div>
+</div>
 
 <script type="module" src="./src/sketch.js"></script>
 

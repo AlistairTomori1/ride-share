@@ -3,6 +3,8 @@ import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
 let Simulation = new SimulationController();
 let canvas, ctx;
+let inputModal, inputModalTitle, inputModalField, inputModalOk, inputModalCancel;
+let activeInputSubmit = null;
 let riderLength = 0;
 let nextDriverId = 0;
 let height = 800;
@@ -53,11 +55,20 @@ function setup()
     //define the canvase and start draw loop
     canvas = document.getElementById("simCanvas");
     ctx = canvas.getContext("2d");
+    inputModal = document.getElementById("inputModal");
+    inputModalTitle = document.getElementById("inputModalTitle");
+    inputModalField = document.getElementById("inputModalField");
+    inputModalOk = document.getElementById("inputModalOk");
+    inputModalCancel = document.getElementById("inputModalCancel");
     canvas.width = textOnlyMode ? 420 : width + 275;
     canvas.height = height;
 
     canvas.addEventListener("wheel", onStatsWheel, { passive: false });
     canvas.addEventListener("mousedown", onStatsPanelMouseDown);
+    inputModal.addEventListener("mousedown", onInputModalMouseDown);
+    inputModalOk.addEventListener("click", submitInputModal);
+    inputModalCancel.addEventListener("click", closeInputModal);
+    inputModalField.addEventListener("keydown", onInputModalKeyDown);
 
     seedSimulation(10, 10);
     draw();
@@ -159,6 +170,43 @@ function spawnController(deltaSeconds)
         riderLength += 1;
         spawnBudget -= 1;
     }
+}
+
+function openInputModal(title, defaultValue, onSubmit)
+{
+    activeInputSubmit = onSubmit;
+    inputModalTitle.textContent = title;
+    inputModalField.value = String(defaultValue);
+    inputModal.style.display = "flex";
+    inputModalField.focus();
+    inputModalField.select();
+}
+
+function closeInputModal()
+{
+    inputModal.style.display = "none";
+    activeInputSubmit = null;
+}
+
+function submitInputModal()
+{
+    if (activeInputSubmit !== null)
+        activeInputSubmit(inputModalField.value);
+    closeInputModal();
+}
+
+function onInputModalMouseDown(event)
+{
+    if (event.target === inputModal)
+        closeInputModal();
+}
+
+function onInputModalKeyDown(event)
+{
+    if (event.key === "Enter")
+        submitInputModal();
+    else if (event.key === "Escape")
+        closeInputModal();
 }
 
 //add a rider with their own properties
@@ -1434,15 +1482,13 @@ function onStatsPanelMouseDown(event)
 
         if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, settingsLayout.driverY + 20, 180, speedButtonHeight))
         {
-            const driverInput = window.prompt("Enter the number of drivers:", String(Simulation.driverList.size));
-            if (driverInput === null)
-                return;
+            openInputModal("Enter the number of drivers:", Simulation.driverList.size, (value) => {
+                const parsedDrivers = Math.floor(Number(value));
+                if (!Number.isFinite(parsedDrivers) || parsedDrivers < 1)
+                    return;
 
-            const parsedDrivers = Math.floor(Number(driverInput));
-            if (!Number.isFinite(parsedDrivers) || parsedDrivers < 1)
-                return;
-
-            resetSimulationForDriverCount(parsedDrivers);
+                resetSimulationForDriverCount(parsedDrivers);
+            });
             return;
         }
 
@@ -1470,17 +1516,15 @@ function onStatsPanelMouseDown(event)
 
         if (isPointInRect(mouseX, mouseY, batchButtonX, batchButtonY, 132, 20))
         {
-            const hoursInput = window.prompt("Enter the number of hours to run:", String(batchTargetHours));
-            if (hoursInput === null)
-                return;
+            openInputModal("Enter the number of hours to run:", batchTargetHours, (value) => {
+                const parsedHours = Number(value);
+                if (!Number.isFinite(parsedHours) || parsedHours <= 0)
+                    return;
 
-            const parsedHours = Number(hoursInput);
-            if (!Number.isFinite(parsedHours) || parsedHours <= 0)
-                return;
-
-            batchTargetHours = parsedHours;
-            batchTargetSeconds = batchTargetHours * 60 * 60;
-            startBatchRun();
+                batchTargetHours = parsedHours;
+                batchTargetSeconds = batchTargetHours * 60 * 60;
+                startBatchRun();
+            });
             return;
         }
 
