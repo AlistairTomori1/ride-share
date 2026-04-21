@@ -44,6 +44,10 @@ const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let targetBusyRatio = 0.85;
 let spawnBudget = 0;
+let completionRateEma = 0;
+let spawnRateEma = 0;
+let lastCompletedRideCount = 0;
+let busyErrorIntegral = 0;
 let eventWrapCache = new WeakMap();
 let eventWrapCacheWidth = -1;
 let cachedEventContentHeight = 0;
@@ -95,7 +99,7 @@ function draw()
             while (simAccumulator >= NORMAL_FIXED_STEP && stepCount < MAX_SIM_STEPS_PER_FRAME)
             {
                 Simulation.runSim(NORMAL_FIXED_STEP);
-                spawnController();
+                spawnController(NORMAL_FIXED_STEP);
                 simAccumulator -= NORMAL_FIXED_STEP;
                 stepCount += 1;
             }
@@ -139,23 +143,31 @@ function draw()
     requestAnimationFrame(draw);
 }
 
-function spawnController()
+function spawnController(deltaSeconds)
 {
-    const driverCount = Math.max(1, Simulation.driverList.size);
-    let busyRatio = (driverCount - Simulation.dispatchEngine.availableCount) / driverCount;
-    let waitPerDriver = Simulation.dispatchEngine.waitingCount / driverCount;
+    const driverCount = Simulation.driverList.size;
+    const controllerSeconds = deltaSeconds * 60 * (Simulation.simSpeed / Simulation.baseSimSpeed);
+    const waitPerDriver = Simulation.dispatchEngine.waitingCount / driverCount;
+    const completionRate = (Simulation.dispatchEngine.rideAmount - lastCompletedRideCount) / controllerSeconds;
+    const desiredWaitPerDriver = targetBusyRatio <= 0.85 ? 0.01 : 0.01 + ((targetBusyRatio - 0.85) * 0.60);
+    const busyError = (Math.min(targetBusyRatio, 1)) - ((driverCount - Simulation.dispatchEngine.availableCount) / driverCount);
 
-    let rate = driverCount * 0.12;
-    rate += (targetBusyRatio - busyRatio) * driverCount * 0.36;
-    rate -= Math.max(0, waitPerDriver - 0.05) * driverCount * 0.8;
+    completionRateEma += (completionRate - completionRateEma) * 0.10;
+    lastCompletedRideCount = Simulation.dispatchEngine.rideAmount;
+    busyErrorIntegral += busyError * controllerSeconds;
+    busyErrorIntegral = Math.max(-120, Math.min(120, busyErrorIntegral));
 
-    if (busyRatio > targetBusyRatio + 0.02)
-        rate -= (busyRatio - (targetBusyRatio + 0.02)) * driverCount * 0.9;
+    let rate = completionRateEma;
+    rate += busyError * driverCount * 0.45;
+    rate += busyErrorIntegral * driverCount * 0.015;
+    rate += (desiredWaitPerDriver - waitPerDriver) * driverCount * 0.35;
 
-    rate = Math.max(0, Math.min(rate, driverCount * 0.25));
+    if (waitPerDriver > desiredWaitPerDriver + 0.08)
+        rate -= (waitPerDriver - (desiredWaitPerDriver + 0.08)) * driverCount * 2.0;
 
-    let speedMult = Simulation.simSpeed / Simulation.baseSimSpeed;
-    spawnBudget += (rate * speedMult) / 60;
+    rate = Math.max(0, Math.min(rate, driverCount * 0.5));
+    spawnRateEma += (rate - spawnRateEma) * 0.20;
+    spawnBudget += spawnRateEma * controllerSeconds;
 
     while (spawnBudget >= 1)
     {
@@ -367,6 +379,10 @@ function seedSimulation(driverCount = 10, riderCount = 10)
     riderLength = 0;
     nextDriverId = 0;
     spawnBudget = 0;
+    completionRateEma = 0;
+    spawnRateEma = 0;
+    lastCompletedRideCount = 0;
+    busyErrorIntegral = 0;
 
     for (let i = 0; i < driverCount; i++)
     {
@@ -450,7 +466,7 @@ function runBatchChunk()
         Simulation.runSim(BATCH_FIXED_STEP);
 
         if (Simulation.pause == 1)
-            spawnController();
+            spawnController(BATCH_FIXED_STEP);
     }
 
     batchProgress = Math.min(1, Simulation.time / batchTargetSeconds);
