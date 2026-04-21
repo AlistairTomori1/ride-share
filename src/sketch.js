@@ -9,31 +9,13 @@ let height = 800;
 let width = 1200;
 let size = 40;
 let amenities = ["Child seat", "Pet", "Wheelchair"];
-const dividerX = 1200;
-const dividerWidth = 12;
 let textOnlyMode = false;
-let statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
+let statsPanelX = textOnlyMode ? 0 : 1200 + 12;
 const statsPadding = 10;
-const statsTabY = 12;
-const statsTabHeight = 28;
-const statsTabGap = 6;
-const statsHeaderY = 80;
-const pauseButtonY = statsHeaderY + 8;
-const pauseButtonHeight = 20;
-const pauseButtonWidth = 90;
-const speedButtonGap = 4;
-const speedButtonWidth = 34;
+const pauseButtonY = 88;
 const speedButtonHeight = 20;
 const listSubTabY = pauseButtonY + speedButtonHeight + 8;
-const listSubTabHeight = 20;
-const listSubTabGap = 4;
-const gridButtonGap = 4;
-const gridButtonWidth = 34;
-const targetRatioButtonGap = 4;
-const statsViewportBottomPadding = 20;
 const statsLineHeight = 24;
-const NORMAL_FIXED_STEP = 1 / 120;
-const MAX_SIM_STEPS_PER_FRAME = 8;
 let lastFrameTime = performance.now();
 let simAccumulator = 0;
 let activeStatsTab = "list";
@@ -56,8 +38,6 @@ let cachedEventLayoutTail = null;
 let cachedEventLayoutSize = -1;
 let batchTargetHours = 6;
 let batchTargetSeconds = batchTargetHours * 60 * 60;
-const BATCH_FIXED_STEP = 1 / 60;
-const BATCH_STEPS_PER_CHUNK = 5000;
 let batchRunActive = false;
 let batchRunDone = false;
 let batchProgress = 0;
@@ -98,15 +78,15 @@ function draw()
             simAccumulator += frameSeconds;
 
             let stepCount = 0;
-            while (simAccumulator >= NORMAL_FIXED_STEP && stepCount < MAX_SIM_STEPS_PER_FRAME)
+            while (simAccumulator >= 1/120 && stepCount < 8)
             {
-                Simulation.runSim(NORMAL_FIXED_STEP);
-                spawnController(NORMAL_FIXED_STEP);
-                simAccumulator -= NORMAL_FIXED_STEP;
+                Simulation.runSim(1/120);
+                spawnController(1/120);
+                simAccumulator -= 1/120;
                 stepCount += 1;
             }
 
-            if (stepCount === MAX_SIM_STEPS_PER_FRAME && simAccumulator >= NORMAL_FIXED_STEP)
+            if (stepCount === 8 && simAccumulator >= 1/120)
                 simAccumulator = 0;
         }
         else
@@ -135,7 +115,7 @@ function draw()
     if (!textOnlyMode)
     {
         ctx.fillStyle = "#ffffff"
-        ctx.fillRect(dividerX, 0, dividerWidth, canvas.height);
+        ctx.fillRect(1200, 0, 12, canvas.height);
         drawGrid(size);
         drawRoute();
         drawDrivers();
@@ -468,15 +448,15 @@ function runBatchChunk()
     if (!batchRunActive)
         return;
 
-    for (let i = 0; i < BATCH_STEPS_PER_CHUNK; i++)
+    for (let i = 0; i < 5000; i++)
     {
         if (Simulation.time >= batchTargetSeconds)
             break;
 
-        Simulation.runSim(BATCH_FIXED_STEP);
+        Simulation.runSim(1/60);
 
         if (Simulation.pause == 1)
-            spawnController(BATCH_FIXED_STEP);
+            spawnController(1/60);
     }
 
     batchProgress = Math.min(1, Simulation.time / batchTargetSeconds);
@@ -532,11 +512,11 @@ function getStatsTabLayout()
 {
     const tabX = statsPanelX + statsPadding;
     const availableWidth = canvas.width - tabX - statsPadding;
-    const tabWidth = Math.floor((availableWidth - (3 * statsTabGap)) / 4);
+    const tabWidth = Math.floor((availableWidth - (3 * 6)) / 4);
     const listTabX = tabX;
-    const eventsTabX = listTabX + tabWidth + statsTabGap;
-    const settingsTabX = eventsTabX + tabWidth + statsTabGap;
-    const statsTabX = settingsTabX + tabWidth + statsTabGap;
+    const eventsTabX = listTabX + tabWidth + 6;
+    const settingsTabX = eventsTabX + tabWidth + 6;
+    const statsTabX = settingsTabX + tabWidth + 6;
     const listLabel = tabWidth < 120 ? "List" : "Driver/Rider List";
 
     return { tabWidth, listTabX, eventsTabX, settingsTabX, statsTabX, listLabel };
@@ -552,7 +532,7 @@ function getListSubTabLayout()
     ];
     const startX = statsPanelX + statsPadding;
     const availableWidth = canvas.width - startX - statsPadding;
-    const tabWidth = Math.floor((availableWidth - ((items.length - 1) * listSubTabGap)) / items.length);
+    const tabWidth = Math.floor((availableWidth - ((items.length - 1) * 4)) / items.length);
 
     return { items, startX, tabWidth };
 }
@@ -601,7 +581,7 @@ function getSpeedButtonItems()
 
 function getSettingsLayout()
 {
-    const surgeY = statsHeaderY + 8;
+    const surgeY = 80 + 8;
     const textModeY = surgeY + 24;
     const controlsY = textModeY + 24;
     const gridY = controlsY + 28;
@@ -614,7 +594,7 @@ function getSettingsLayout()
 function getActiveViewportTop(tab = activeStatsTab)
 {
     if (tab === "list")
-        return listSubTabY + listSubTabHeight + 8;
+        return listSubTabY + 20 + 8;
     if (tab === "events")
         return 92;
     return 110;
@@ -622,7 +602,7 @@ function getActiveViewportTop(tab = activeStatsTab)
 
 function getStatsViewportHeight(tab = activeStatsTab)
 {
-    return canvas.height - getActiveViewportTop(tab) - statsViewportBottomPadding;
+    return canvas.height - getActiveViewportTop(tab) - 20;
 }
 
 function isPointInRect(mouseX, mouseY, x, y, width, height)
@@ -686,7 +666,7 @@ function spawnSurgeRiders(count = 10)
 function toggleTextOnlyMode()
 {
     textOnlyMode = !textOnlyMode;
-    statsPanelX = textOnlyMode ? 0 : dividerX + dividerWidth;
+    statsPanelX = textOnlyMode ? 0 : 1200 + 12;
     canvas.width = textOnlyMode ? 420 : width + 275;
     invalidateEventLayoutCache();
 }
@@ -838,7 +818,7 @@ function getEndSimLayout()
 function drawListSubTabs()
 {
     const layout = getListSubTabLayout();
-    drawButtonRow(layout.startX, listSubTabY, layout.tabWidth, listSubTabHeight, listSubTabGap, layout.items, activeListSubTab, "11px serif", 5, 14);
+    drawButtonRow(layout.startX, listSubTabY, layout.tabWidth, 20, 4, layout.items, activeListSubTab, "11px serif", 5, 14);
 }
 
 function drawPauseButton(drawY)
@@ -846,7 +826,7 @@ function drawPauseButton(drawY)
     const buttonX = statsPanelX + statsPadding;
     const label = Simulation.pause === 1 ? "Pause" : "Resume";
     ctx.fillStyle = "#4f4f4f";
-    ctx.fillRect(buttonX, drawY, pauseButtonWidth, pauseButtonHeight);
+    ctx.fillRect(buttonX, drawY, 90, 20);
     ctx.fillStyle = "#ffffff";
     ctx.font = "14px serif";
     ctx.fillText(label, buttonX + 24, drawY + 14);
@@ -875,14 +855,14 @@ function drawTextModeButton(drawY)
 function drawSpeedButtons(tab)
 {
     const settingsLayout = getSettingsLayout();
-    const startX = statsPanelX + statsPadding + pauseButtonWidth + 6;
+    const startX = statsPanelX + statsPadding + 90 + 6;
     const drawY = (tab === "settings") ? settingsLayout.controlsY : pauseButtonY;
-    drawButtonRow(startX, drawY, speedButtonWidth, speedButtonHeight, speedButtonGap, getSpeedButtonItems(), activeSpeedMultiplier);
+    drawButtonRow(startX, drawY, 34, speedButtonHeight, 4, getSpeedButtonItems(), activeSpeedMultiplier);
 }
 
 function drawGridSizeButtons()
 {
-    drawButtonRow(statsPanelX + statsPadding, getSettingsLayout().gridY, gridButtonWidth, speedButtonHeight, gridButtonGap, getGridButtonItems(), size);
+    drawButtonRow(statsPanelX + statsPadding, getSettingsLayout().gridY, 34, speedButtonHeight, 4, getGridButtonItems(), size);
 }
 
 function drawDriverCountButtons()
@@ -908,13 +888,13 @@ function drawTargetRatioButtons()
     ctx.fillStyle = "#ffffff";
     ctx.font = "12px serif";
     ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioY + 14);
-    drawButtonRow(startX, targetRatioY + 20, 34, speedButtonHeight, targetRatioButtonGap, getTargetRatioButtonItems(), targetBusyRatio);
+    drawButtonRow(startX, targetRatioY + 20, 34, speedButtonHeight, 4, getTargetRatioButtonItems(), targetBusyRatio);
 }
 
 function drawStatsTabs(tabLayout, tabFont)
 {
     const statsTabItems = getStatsTabItems(tabLayout);
-    drawButtonRow(tabLayout.listTabX, statsTabY, tabLayout.tabWidth, statsTabHeight, statsTabGap, statsTabItems, activeStatsTab, tabFont, 10, 19);
+    drawButtonRow(tabLayout.listTabX, 12, tabLayout.tabWidth, 28, 6, statsTabItems, activeStatsTab, tabFont, 10, 19);
 }
 
 function drawStatsHeaderControls(normalFont)
@@ -922,7 +902,7 @@ function drawStatsHeaderControls(normalFont)
     const settingsLayout = getSettingsLayout();
     ctx.fillStyle = "#ffffff";
     ctx.font = normalFont;
-    ctx.fillText("Sim time: " + Simulation.getFormattedSimTime(), statsPanelX + statsPadding, statsHeaderY);
+    ctx.fillText("Sim time: " + Simulation.getFormattedSimTime(), statsPanelX + statsPadding, 80);
 
     if (activeStatsTab === "list")
     {
@@ -943,7 +923,7 @@ function drawStatsHeaderControls(normalFont)
     else if (activeStatsTab === "stats")
     {
         const batchButtonX = statsPanelX + statsPadding;
-        const batchButtonY = statsHeaderY + 8;
+        const batchButtonY = 80 + 8;
         const statsDownloadButtonY = batchButtonY + 28;
         ctx.fillStyle = "#4f4f4f";
         ctx.fillRect(batchButtonX, batchButtonY, 132, 20);
@@ -1297,10 +1277,10 @@ function handleStatsTabSelection(mouseX, mouseY)
         mouseX,
         mouseY,
         tabLayout.listTabX,
-        statsTabY,
+        12,
         tabLayout.tabWidth,
-        statsTabHeight,
-        statsTabGap,
+        28,
+        6,
         getStatsTabItems(tabLayout)
     );
 
@@ -1320,8 +1300,8 @@ function handleListSubTabSelection(mouseX, mouseY)
         subLayout.startX,
         listSubTabY,
         subLayout.tabWidth,
-        listSubTabHeight,
-        listSubTabGap,
+        20,
+        4,
         subLayout.items
     );
 
@@ -1338,11 +1318,11 @@ function handleSpeedSelection(mouseX, mouseY, drawY)
     const selectedSpeed = getClickedButtonRowValue(
         mouseX,
         mouseY,
-        statsPanelX + statsPadding + pauseButtonWidth + 6,
+        statsPanelX + statsPadding + 90 + 6,
         drawY,
-        speedButtonWidth,
+        34,
         speedButtonHeight,
-        speedButtonGap,
+        4,
         getSpeedButtonItems()
     );
 
@@ -1360,7 +1340,7 @@ function onStatsWheel(event)
     const statsViewportHeight = getStatsViewportHeight();
     const maxScroll = Math.max(0, statsContentHeight - statsViewportHeight);
 
-    if (mouseX < statsPanelX || mouseY < viewportTop || mouseY > canvas.height - statsViewportBottomPadding || maxScroll <= 0)
+    if (mouseX < statsPanelX || mouseY < viewportTop || mouseY > canvas.height - 20 || maxScroll <= 0)
         return;
 
     statsScrollByTab[activeStatsTab] += Math.sign(event.deltaY) * statsLineHeight;
@@ -1404,7 +1384,7 @@ function onStatsPanelMouseDown(event)
         if (handleListSubTabSelection(mouseX, mouseY))
             return;
 
-        if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, pauseButtonY, pauseButtonWidth, pauseButtonHeight))
+        if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, pauseButtonY, 90, 20))
         {
             togglePause();
             return;
@@ -1427,7 +1407,7 @@ function onStatsPanelMouseDown(event)
             return;
         }
 
-        if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, settingsLayout.controlsY, pauseButtonWidth, pauseButtonHeight))
+        if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, settingsLayout.controlsY, 90, 20))
         {
             togglePause();
             return;
@@ -1441,9 +1421,9 @@ function onStatsPanelMouseDown(event)
             mouseY,
             statsPanelX + statsPadding,
             settingsLayout.gridY,
-            gridButtonWidth,
+            34,
             speedButtonHeight,
-            gridButtonGap,
+            4,
             getGridButtonItems()
         );
         if (selectedGridSize !== null)
@@ -1473,7 +1453,7 @@ function onStatsPanelMouseDown(event)
             settingsLayout.targetRatioY + 20,
             34,
             speedButtonHeight,
-            targetRatioButtonGap,
+            4,
             getTargetRatioButtonItems()
         );
         if (selectedTargetRatio !== null)
@@ -1485,7 +1465,7 @@ function onStatsPanelMouseDown(event)
     else if (activeStatsTab === "stats")
     {
         const batchButtonX = statsPanelX + statsPadding;
-        const batchButtonY = statsHeaderY + 8;
+        const batchButtonY = 80 + 8;
         const statsDownloadButtonY = batchButtonY + 28;
 
         if (isPointInRect(mouseX, mouseY, batchButtonX, batchButtonY, 132, 20))
