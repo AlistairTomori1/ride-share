@@ -282,6 +282,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - Updated documentation and the daily log.
 - Added comments to the code.
 - Prepared the project for submission.
+- GitHub References: [Issue #89] (https://github.com/AlistairTomori1/ride-share/issues/89)
 
 **James**
 - Pending update.
