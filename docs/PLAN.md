@@ -11,257 +11,223 @@
 - Checkpoint 2: Friday, April 10 at 12:50 PM
 - Checkpoint 3: Thursday, April 23 at 12:45 PM
 
-## Project Goal
+## Goal
 
-The goal of this project is to build a ride-share dispatch simulation that uses custom linked lists as the primary data structure for storing and updating dynamic simulation data. The project is designed to demonstrate data structure implementation, algorithmic matching logic, simulation modeling, object-oriented programming, time complexity analysis, and professional software development practices.
+Our goal for this project was to build a ride-share dispatch simulation that uses custom linked lists as the main data structure. We wanted the project to show more than just a working visualization. The important part was building a system that could manage drivers, rider requests, state transitions, expiration, matching, and event tracking in a structured way.
 
-This project is not a game and is not primarily a UI project. The visualization exists to show the linked-list-based simulation in motion. The core of the project is the correctness of the data structures, dispatch logic, state transitions, and event tracking.
+We also planned the project with Level 4 in mind, so we aimed to go beyond the base requirements by adding larger-load support, surge behavior, stronger documentation, and a more professional GitHub workflow.
 
-## Final Target
+## Level 4 Target
 
-This project is being developed to meet **Level 4 - Inferno** expectations.
+We built this project toward **Level 4 - Inferno**.
 
-### Level 4 Focus
+### What that meant for us
 
-- Medium data set support, including large driver and rider loads
-- Surge-based advanced behavior
-- Professional GitHub workflow with issues, pull requests, and project tracking
-- Performance comparison and refactoring discussion
-- Clear analysis of limitations, scaling tradeoffs, and design decisions
+- support larger driver and rider counts
+- include advanced behavior through surge logic
+- use GitHub issues, pull requests, and project tracking
+- document refactoring and performance tradeoffs
+- show that we thought about scaling, not just correctness
 
-## Core System Requirements
+## What the Final System Needed to Include
 
-The final system is planned to demonstrate the following:
+By the end of the project, our plan was for the system to include:
 
-- Custom `Node` and `LinkedList` implementations
-- Dynamic linked lists for drivers, ride requests, expired riders, and event history
-- Composite dispatch scoring using distance, capacity, and amenities
+- custom `Node` and `LinkedList` classes
+- linked lists for drivers and ride requests
+- composite dispatch scoring
 - Manhattan distance calculations
-- Driver state transitions through the ride lifecycle
-- Request expiration handling
-- Structured event logging using a linked list
-- Real-time visualization in the browser
-- Adjustable simulation speed
-- Text-only and batch-run modes for larger simulation runs
-- Statistics collection and analysis
+- driver state transitions
+- request expiration
+- event logging with a linked list
+- browser-based visualization
+- adjustable simulation speed
+- documentation, analysis, and submission evidence
 
-## Implemented Feature Plan
+## Main Parts of the Project
 
 ### 1. Data Structures
 
-The project is built around linked-list-based storage and traversal.
+Our project is built around linked lists.
 
-Planned and implemented structures:
-- `Node`
-- `LinkedList`
-- Driver list
-- Rider list
-- Priority rider list
-- Expired rider list
-- Event log list
+We planned to use linked lists for:
+- drivers
+- riders
+- priority riders
+- expired riders
+- visible event log
 
-These structures support insertions, removals, traversal, and state updates during the simulation.
+This let us keep insertion and removal efficient while still meeting the assignment focus on custom data structures.
 
-### 2. Dispatch and Matching Logic
+### 2. Dispatch Logic
 
-The dispatch system is designed to simulate how a ride-share platform matches riders to drivers.
+The dispatch side of the project was planned around matching riders to the best driver instead of assigning randomly.
 
-Planned and implemented logic:
-- Match riders and drivers using a composite score
-- Use Manhattan distance as the distance metric
-- Include passenger count and amenity requirements in scoring
-- Maintain driver availability and state transitions
-- Assign, pick up, transport, and drop off riders
-- Expire unmatched requests
+Main dispatch goals:
+- scan available drivers for a new rider
+- scan waiting riders when a driver becomes free
+- score matches using distance, capacity, and amenities
+- reject impossible matches using `Infinity`
+- keep driver and rider state changes consistent
 
-### 3. Simulation Features
+### 3. Simulation Layer
 
-The simulation layer is intended to model the system over time rather than only compute isolated matches.
+The project also needed to behave like a real simulation over time.
 
-Planned and implemented simulation features:
-- Real-time simulation loop
-- Driver movement on a grid
-- Ride request spawning
-- Configurable simulation speed
-- Pause and resume controls
-- Real simulated date/time clock
-- Surge button for demand spikes
-- Adjustable target busy ratio for rider spawning behavior
+Main simulation goals:
+- continuously spawn riders
+- move drivers on the grid
+- pick up and drop off riders
+- expire riders if they wait too long
+- track time and update statistics
 
-### 4. Visualization and Interface
+### 4. Interface and Testing Support
 
-The interface is used to inspect system state and support testing.
+Even though this was not mainly a UI project, we still needed an interface that made the system easy to inspect.
 
-Planned and implemented interface features:
-- Visual map with drivers and riders
-- Driver/rider list panel
-- Event log tab
-- Settings tab
-- Stats tab
-- List sub-tabs for filtered views
-- Scrollable text panels
-- Text-only mode
-- Batch-run end screen
-- Downloadable full event log
-
-### 5. Statistics and Analysis
-
-The project includes statistics to support performance review and reflection.
-
-Planned and implemented metrics:
-- Average wait time
-- Average ride time
-- Expired rides per hour
-- Average percent of busy drivers
-- Total rides completed
-- Total earnings
-
-### 6. Large-Load Support
-
-To support Level 4 expectations, the project includes planning and implementation for larger simulation sizes.
-
-Planned large-load support:
-- Text-only mode to remove render overhead
-- Batch simulation mode for long simulation runs
-- Virtualized stats/event rendering
-- Cached counters for available and waiting entities
-- Event log caps for visual performance
-- Refactoring for simpler and more efficient update paths
+Main interface goals:
+- show drivers and riders visually
+- show text-based lists
+- show event history
+- support pausing and speed changes
+- support text-only and batch-run modes for larger tests
+- show summary stats clearly
 
 ## Phase Breakdown
 
-## Phase 1: Core Architecture
+### Phase 1: Core Architecture
 
 **Focus**
-- Build the linked-list foundation
-- Define the simulation models
-- establish the class relationships and UML
+- build the linked-list foundation
+- define the main simulation classes
+- create the UML and algorithm plan
 
-**Primary Deliverables**
-- `Node` and `LinkedList`
-- Driver and rider model classes
-- UML diagram
-- Initial algorithm plan
+**Deliverables**
+- `Node`
+- `LinkedList`
+- driver and rider model classes
+- class design and UML
+- early dispatch structure
 
-## Phase 2: Matching Engine
-
-**Focus**
-- Build dispatch scoring
-- handle driver state transitions
-- add request expiration and event logging
-
-**Primary Deliverables**
-- Composite matching logic
-- Expiration handling
-- Event log
-- Big-O analysis
-
-## Phase 3: Full Simulation
+### Phase 2: Matching Engine
 
 **Focus**
-- Connect the dispatch system to a live simulation
-- visualize the data structures and state changes
-- improve interactivity and debugging visibility
+- implement matching logic
+- add expiration and event tracking
+- connect rider/driver state changes
 
-**Primary Deliverables**
-- Browser-based visualization
-- Adjustable speed controls
-- Driver and rider movement
-- Visual inspection of matches, expirations, and events
+**Deliverables**
+- composite scoring
+- expiration handling
+- event log
+- initial time complexity work
 
-## Phase 4: Level 4 Expansion and Submission Polish
+### Phase 3: Full Simulation
 
 **Focus**
-- Extend the project beyond the base requirements
-- support larger simulation sizes
-- strengthen documentation and workflow evidence
+- connect the logic to a live browser simulation
+- add movement and interface controls
+- make the system easy to test visually
 
-**Primary Deliverables**
-- Surge logic
-- Batch mode and text-only mode
-- Stats and downloadable event log
-- GitHub issue / PR workflow evidence
-- Refactoring and performance discussion
-- Final submission documents
+**Deliverables**
+- real-time simulation loop
+- driver movement
+- rider movement
+- adjustable speed
+- pause controls
+- visible lists and event log
+
+### Phase 4: Level 4 Expansion and Submission Prep
+
+**Focus**
+- improve scaling
+- add advanced features
+- clean up the code and documentation
+
+**Deliverables**
+- surge logic
+- stats tab
+- text-only mode
+- batch simulation mode
+- downloadable event log
+- refactoring notes
+- submission documents
 
 ## Team Responsibilities
 
-## Alistair
+### Alistair
 
-Primary focus areas:
-- System architecture
-- Dispatch and simulation logic
-- Scoring design
-- Performance improvements
-- Statistics and analysis
-- Documentation and submission organization
+Main responsibilities:
+- system architecture
+- dispatch and simulation logic
+- scoring design
+- performance improvements
+- stats and batch mode features
+- final documentation organization
 
-## James
+### James
 
-Primary focus areas:
+Main responsibilities:
 - UML and design support
-- Linked-list implementation support
-- Visualization support
-- Class modeling support
-- Testing and project documentation contributions
+- class modeling support
+- linked-list support
+- visualization support
+- testing and documentation contributions
 
 ## Shared Responsibilities
 
-- Debugging and validation
-- Feature testing
+- testing and debugging
 - GitHub workflow
-- Daily logs
-- Submission preparation
+- daily development tracking
+- preparing final submission files
 
 ## GitHub Workflow
 
-The project uses GitHub as part of the development process.
+We used GitHub as part of the development process rather than only as a final upload location.
 
-Planned workflow:
-- Use issues to track tasks and feature work
-- Use pull requests for major changes
-- Use a shared GitHub Project board to organize progress
-- Maintain meaningful commit history
-- Keep supporting documents in the repository for submission evidence
-
-This supports the course expectation of using professional development practices and collaborative tools.
+Our workflow included:
+- tracking work with issues
+- using pull requests for larger changes
+- using a GitHub Project board to organize tasks
+- keeping a visible commit history
+- keeping submission documents in the repo
 
 ## Success Criteria
 
-The final project should clearly show:
+We considered the project successful if it clearly showed:
 
-- Correct custom linked-list implementation
-- Correct dispatch and state-transition logic
-- Event logging using a linked list
-- Time-based request expiration
-- Manhattan-distance-based ride dispatch
-- Modular object-oriented code organization
-- Real-time simulation and visualization
-- Adjustable speed and control features
-- Clear time complexity analysis
-- Professional documentation and AI transparency
-- Level 4 features, including surge behavior, large-load support, and GitHub workflow evidence
+- a working custom linked-list structure
+- correct matching and state transitions
+- event logging through linked lists
+- request expiration
+- Manhattan-distance-based dispatch
+- modular class structure
+- a working simulation and visualization
+- adjustable controls and statistics
+- clear documentation and AI transparency
+- Level 4 features and evidence
 
 ## Final Submission Checklist
 
-The final submission should include:
+Our final submission needs to include:
 
-- Complete working simulation
-- Source code repository link
-- Daily logs
-- Project plan
+- complete working simulation
+- repository link
+- daily logs
+- project plan
 - I/O history
 - UML
 - AI usage log
-- Time complexity analysis
-- Reflection on limitations and future improvements
+- time complexity analysis
+- reflection on limitations and future improvements
 
-## Project Reflection Direction
+## Reflection Direction
 
-The final reflection should explain:
+When we write the final reflection, we want it to explain:
 
-- what data structures and algorithms were most important
+- which data structures mattered most in the project
 - where linked lists worked well
-- where performance limitations appeared under large loads
-- what optimizations and refactors improved scalability
-- how the project demonstrates Level 4 expectations
+- where performance problems started to show up
+- what changes improved the simulation
+- what we would still improve if we had more time
+- how the finished project meets Level 4 expectations
