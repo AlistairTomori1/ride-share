@@ -8,6 +8,10 @@ This project is a browser-based ride-share dispatch simulation. It uses custom l
 - [AI Usage](AI_USAGE_LOG.md)
 - [Time Complexity](TIME_COMPLEXITY.md)
 
+## UML Diagram
+
+![UML Diagram](../assets/UML.jpg)
+
 ## Requirements
 
 - `git`
