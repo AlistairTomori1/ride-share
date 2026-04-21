@@ -1,6 +1,34 @@
-1. AI gave us a file structure to start with.
-2. AI made some fixes to the UI so youre able to scroll throgh the list of drivers and riders.
-3. AI made buttons for pausing and changing speed, however, we implemented the actual function of them.
-4. AI helped with a bug in simulation controller that we were having a very hard time solving, where sometimes the driver would just jitter overtop of a pickup location.
-5. AI scanned the project to give us information on the time complexity so we could put it in the document.
-6. AI helped with a bug in spawnRiders() where when the grid size was changed to 5 or 10, requests where just starting at 0, 7. AI introduced the do{} while() function and suggested we use it.
+# AI Usage Log
+
+This document records how AI assistance was used during development of the ride-share dispatch simulation project.
+
+## Summary of AI Use
+
+1. **Initial project setup**
+   - AI suggested a starting file structure for organizing the project.
+   - The final structure was reviewed and adapted during development.
+
+2. **UI scrolling improvements**
+   - AI helped update the UI so the driver and rider lists could be scrolled when they became too long to fit on screen.
+   - These changes improved usability of the visualization panel.
+
+3. **Pause and speed controls**
+   - AI helped generate the UI buttons for pausing the simulation and changing simulation speed.
+   - The actual simulation behavior and control logic were implemented and integrated by us.
+
+4. **Driver movement bug**
+   - AI helped diagnose and fix a difficult bug in `SimulationController` where a driver could jitter on top of a pickup location.
+   - This support was used for debugging and stabilization of the simulation.
+
+5. **Time complexity support**
+   - AI reviewed the project structure and helped identify the time complexity of key functions.
+   - This information was then used to complete the complexity analysis document.
+
+6. **Rider spawn bug with small grid sizes**
+   - AI helped troubleshoot a bug in `spawnRider()` where ride requests could spawn incorrectly when the grid size was changed to `5` or `10`.
+   - AI suggested using a `do { } while ()` loop to repeatedly generate positions until a valid location was found.
+
+## Notes
+
+- AI was used mainly for debugging help, UI support, and documentation support.
+- Core project logic was reviewed and integrated into the codebase with human decisions and modifications.

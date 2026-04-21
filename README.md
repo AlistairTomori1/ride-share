@@ -2,6 +2,13 @@
 
 This project is a browser-based ride-share dispatch simulation. It uses custom linked lists to manage drivers, ride requests, expired riders, and the event log.
 
+## Project Documents
+
+- [Daily Development Log](DAILY_LOG.md)
+- [AI Usage Log](AI_USAGE_LOG.md)
+- [Time Complexity Analysis](TIME_COMPLEXITY.md)
+- [Refactoring Notes](REFRACTORING.md)
+
 ## Requirements
 
 - `git`
