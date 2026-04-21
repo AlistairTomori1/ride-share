@@ -23,7 +23,41 @@ This is our ride-share dispatch simulation project for ICS4U. The system uses cu
 
 There is no build step and no package install step.
 
-## Run The Simulation
+## Download and Run
+
+Desktop builds are available in the GitHub Releases section.
+
+### macOS
+
+1. Download the macOS `.dmg` file from Releases.
+2. Open the `.dmg` and move the app into `Applications`.
+3. Try to open the app.
+
+Because the app is currently **not signed or notarized**, macOS may block it the first time.
+
+If that happens:
+1. Open **System Settings**
+2. Go to **Privacy & Security**
+3. Scroll down to the security warning for the app
+4. Click **Open Anyway**
+5. Open the app again
+
+### Windows
+
+1. Download the Windows `Setup.exe` file from Releases.
+2. Run the installer.
+3. Open the installed app.
+
+Because the app is currently **not signed**, Windows may show a **Microsoft Defender SmartScreen** warning.
+
+If that happens:
+1. Click **More info**
+2. Click **Run anyway**
+
+### Manual Browser Run
+
+<details>
+<summary>Show manual setup steps</summary>
 
 1. Clone the repository:
 
@@ -45,6 +79,8 @@ http://localhost:8000
 ```
 
 4. Keep the terminal window open while using the simulation.
+
+</details>
 
 ## Basic Use
 
