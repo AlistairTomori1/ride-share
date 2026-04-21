@@ -23,6 +23,7 @@ export default class DispatchEngine
         this.rideAmount = 0;
     }
 
+    //adds each event to log
     recordEvent(event)
     {
         const exportLine = "[" + event.time + "] " + event.event;
@@ -44,6 +45,7 @@ export default class DispatchEngine
     }
 
 
+    //goes through each driver and assignes one to a waiting rider
     matchDriverToSingle(rider)
     {
         let currDriver = this.DriverList.head;
@@ -72,6 +74,7 @@ export default class DispatchEngine
         return;
     }
 
+    //goes through each rider and assignes one to a driver
     matchRiderToSingle(driver)
     {
         let currRider = this.priorityList.head;
@@ -122,6 +125,7 @@ export default class DispatchEngine
         return;
     }
 
+    //actually matching function
     assignDriver(rider, driver)
     {
         driver.state = "PICKING UP";
@@ -138,6 +142,8 @@ export default class DispatchEngine
             this.recordEvent(event);
         }
     }
+
+    
     updateBusyDrivers()
     {
         let curr = this.DriverList.head;
@@ -160,6 +166,7 @@ export default class DispatchEngine
         }
     }
 
+    //this checks the rider location to update its state
     updateWaitingRiders(speedMultiplier = 1)
     {
         let curr = this.RiderList.head;
@@ -217,12 +224,14 @@ export default class DispatchEngine
         }
     }
 
+    //find the profite from each ride
     calculateProfit(rider)
     {
         let baseProfit = Math.floor(rider.cost / 10);
         return Math.max(1, Math.floor(baseProfit * this.surgeMultiplier));
     }
 
+    //makes expired rider list
     trackExpiredRider(rider)
     {
         this.expiredList.addLink(new ExpiredList(rider));
