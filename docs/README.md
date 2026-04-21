@@ -4,10 +4,9 @@ This project is a browser-based ride-share dispatch simulation. It uses custom l
 
 ## Project Documents
 
-- [Daily Development Log](DAILY_LOG.md)
-- [AI Usage Log](AI_USAGE_LOG.md)
-- [Time Complexity Analysis](TIME_COMPLEXITY.md)
-- [Refactoring Notes](REFRACTORING.md)
+- [Daily Log](DAILY_LOG.md)
+- [AI Usage](AI_USAGE_LOG.md)
+- [Time Complexity](TIME_COMPLEXITY.md)
 
 ## Requirements
 
