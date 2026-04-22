@@ -12,13 +12,13 @@ One part of the project that went well was the overall structure. Separating the
 
 Another part that went well was building around linked lists the whole way through instead of treating them like a small requirement at the beginning. We used linked lists for the driver list, rider list, priority rider list, expired rider list, and visible event log. That helped keep the project aligned with the actual goal of the assignment.
 
-We also think the simulation became much stronger once we added better debugging visibility. Features like the event log, the stats tab, text-only mode, and batch simulation made it much easier to test the system and understand what it was doing. Those tools made it possible to tune and improve the simulation, rather than just being a visual feature.
+We also think the simulation became much stronger once we added better debugging visibility. Features like the event log, the stats tab, text-only mode, batch simulation, high-speed chart mode, and driver POV made it much easier to test the system and understand what it was doing. Those tools made it possible to tune and improve the simulation, rather than just being visual features.
 
 ## Challenges We Ran Into
 
 The biggest challenge was performance and scaling. Once we started increasing the number of drivers and riders, problems were showing up. Matching drivers to riders and riders back to drivers still depends on scanning through full linked lists, so large runs exposed the cost of that design. That forced us to think more carefully about when matching should run, how much rendering was costing, and what needed to be optimized first.
 
-Another challenge was tuning the spawn controller. At first we just spawned riders as a fixed rate. However, we soon found out it was not enough. It might look fine for one driver count and then behave completely differently when the number of drivers changes. We spent a lot of time adjusting the spawn logic so the system could aim for a target busy ratio instead of only looking acceptable in one small test case.
+Another challenge was tuning the spawn controller. At first we just spawned riders as a fixed rate. However, we soon found out it was not enough. It might look fine for one driver count and then behave completely differently when the number of drivers changes. We spent a lot of time adjusting the spawn logic so the system could aim for an average busy ratio over time instead of only looking acceptable in one small test case. The final version ended up using smoothed utilization, completion rate, queue pressure, and randomized arrivals to make the request flow look more natural.
 
 We also had to deal with bugs that only appeared at higher speed or larger scale. For example, movement bugs, rider cleanup bugs, and event-log issues were much harder to notice in small runs than in fast or large ones. That taught us that a simulation can appear correct under normal conditions but still break under stress.
 
@@ -38,6 +38,8 @@ Those include:
 - surge logic
 - text-only mode
 - batch-run mode
+- driver POV mode
+- high-speed summary mode at `30X` and `60X`
 - statistics tracking
 - downloadable full event log
 - GitHub issues, pull requests, and project tracking

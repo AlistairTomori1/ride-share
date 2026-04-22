@@ -41,8 +41,15 @@ export default class Scoring
 
     }
 
+    scoreWaitTime(rider)
+    {
+        const initialWaitTimer = Math.max(1, rider.initialWaitTimer ?? 600);
+        const waitedFraction = Math.max(0, Math.min(1, 1 - (rider.waitTimer / initialWaitTimer)));
+        return -(waitedFraction * waitedFraction * 250);
+    }
+
     calculateScore(driver, rider)
     {
-        return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider));
+        return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider) + this.scoreWaitTime(rider));
     }
 }

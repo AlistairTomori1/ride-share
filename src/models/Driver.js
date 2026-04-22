@@ -10,5 +10,6 @@ export default class Driver extends Node{
         this.busyTimer = 0;
         this.rotation = 0;
         this.profits = 0;
+        this.tripCount = 0;
 }
 }

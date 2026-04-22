@@ -11,6 +11,8 @@ To access our planning and task tracking, open the repository's **Projects** tab
 - [I/O History](docs/IO_HISTORY.md)
 - [UML](assets/UML.jpg)
 - [AI Usage Log](docs/AI_USAGE_LOG.md)
+- [Time Complexity](docs/TIME_COMPLEXITY.md)
+- [Refactoring Notes](docs/REFRACTORING.md)
 - [Reflection](docs/REFLECTION.md)
 
 ## UML Diagram
@@ -109,7 +111,14 @@ This tab shows the current simulation state.
 Controls:
 
 - `Pause`: pauses or resumes the simulation
-- speed buttons: `0.5X`, `1X`, `2X`, `10X`
+- speed buttons: `0.5X`, `1X`, `2X`, `10X`, `30X`, `60X`
+
+Additional interaction:
+
+- click a driver on the map to enter `Driver POV` mode
+- the selected driver stays centered on screen
+- a HUD shows driver earnings, trip count, seats, amenities, and current location
+- assignment notifications appear for the selected driver
 
 Sub-tabs:
 
@@ -135,7 +144,7 @@ Available controls:
 - `Surge`: spawns 10 ride requests immediately
 - `Text only mode`: toggles the map rendering off and keeps the text UI
 - `Pause`: pauses or resumes the simulation
-- speed buttons: `0.5X`, `1X`, `2X`, `10X`
+- speed buttons: `0.5X`, `1X`, `2X`, `10X`, `30X`, `60X`
 - grid size buttons: `5`, `10`, `20`, `40`, `80`
 - `Set driver count`: enter a number and the simulation resets with that many drivers
 - target busy ratio buttons: `50%`, `65%`, `85%`, `100%`, `120%`
@@ -145,6 +154,7 @@ Notes:
 - changing driver count resets the simulation
 - higher target busy ratios make rider spawning more aggressive
 - `120%` is meant to push the system above full utilization by allowing more backlog
+- at `30X` and `60X`, the normal map is replaced with live bar charts
 
 ### Stats
 
@@ -163,6 +173,19 @@ Buttons:
 
 - `Run Batch`: runs the simulation for a chosen number of hours without normal rendering
 - `Download Event Log`: downloads the full event log as a text file
+
+### High-Speed Summary Mode
+
+At `30X` and `60X`, the map is hidden and replaced with live bar charts.
+
+- Drivers:
+  - `Available`
+  - `Picking up`
+  - `Dropping off`
+- Riders:
+  - `Total`
+  - `Waiting`
+  - `Picked up`
 
 ## Batch Run Mode
 
@@ -202,6 +225,8 @@ Clock behavior:
 - at `2X`, 1 real second = 2 simulated minutes
 - at `0.5X`, 1 real second = 30 simulated seconds
 - at `10X`, 1 real second = 10 simulated minutes
+- at `30X`, 1 real second = 30 simulated minutes
+- at `60X`, 1 real second = 60 simulated minutes
 
 This affects the displayed simulation clock while the movement and dispatch logic continue to run through the update loop.
 

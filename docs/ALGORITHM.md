@@ -7,10 +7,10 @@ This document is our high-level summary of how the current simulation runs.
 Each live update follows this order:
 
 1. Advance simulated time
-2. Update waiting riders and expire requests that ran out of time
+2. Update waiting riders and expire requests that ran out of simulated time
 3. Move drivers toward pickups or dropoffs
 4. Move riders with their assigned drivers if they have already been picked up
-5. Update surge multiplier
+5. Update surge multiplier from the waiting queue
 6. Update statistics
 7. Spawn new riders based on the spawn controller
 
@@ -114,6 +114,7 @@ FUNCTION MATCH_RIDER_TO_SINGLE(driver)
 ```text
 FUNCTION CALCULATE_SCORE(driver, rider)
     distanceScore = Manhattan distance between driver and rider
+    waitBonus = score bonus based on how long the rider has already waited
 
     IF driver capacity is too small
         RETURN Infinity
@@ -121,7 +122,7 @@ FUNCTION CALCULATE_SCORE(driver, rider)
     IF rider requires amenities that the driver does not have
         RETURN Infinity
 
-    RETURN distanceScore
+    RETURN distanceScore + waitBonus
 ```
 
 ## Driver Movement
@@ -154,7 +155,7 @@ FUNCTION MOVE_RIDERS()
         IF rider is PICKED UP
             Set rider location to driver location
 
-        IF rider is DROPPED OFF
+        IF rider is DROPPED OFF or EXPIRED
             Remove rider from its linked list
 ```
 
@@ -162,17 +163,25 @@ FUNCTION MOVE_RIDERS()
 
 ```text
 FUNCTION SPAWN_CONTROLLER(deltaSeconds)
-    Measure current busy-driver ratio
-    Measure waiting riders per driver
-    Measure completed rides since the last update
+    Measure:
+        current busy-driver ratio
+        waiting riders per driver
+        recent ride completion rate
 
-    Use those values to compute a spawn rate
-    Add that rate into spawnBudget
-
-    WHILE spawnBudget >= 1
-        Spawn one rider
-        Decrease spawnBudget by 1
+    Smooth those values over time
+    Estimate a baseline demand rate from service capacity
+    Adjust demand using utilization and queue pressure
+    Apply a small amount of slow random demand drift
+    Convert the final rate into Poisson-style rider arrivals
+    Spawn the sampled number of new riders
 ```
+
+## Extra Inspection Modes
+
+Outside the core dispatch loop, the project also includes:
+
+- `Driver POV` mode, where clicking a driver centers the camera and shows a driver-specific HUD
+- `High-Speed Summary Mode`, where `30X` and `60X` replace the map with live driver/rider charts
 
 ## Summary
 

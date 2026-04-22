@@ -101,6 +101,25 @@ A major decision was:
 
 That fixed a major problem where `100%` was acting more like overload mode instead of balanced full utilization.
 
+### Final Spawn-Controller Direction
+
+The final version of the spawn controller ended up being much more realistic than the earlier fixed-rate versions.
+
+The main values it now uses are:
+- smoothed busy-driver ratio
+- smoothed ride completion rate
+- waiting riders per driver
+- an estimated service-time baseline
+- a controlled random demand drift
+
+The main outputs we judged it on were:
+- average busy-driver percentage over long runs
+- queue size
+- expiration pressure
+- whether rider arrivals looked natural instead of clumped together
+
+We also changed the actual arrival process to Poisson-style sampling over short simulated slices. That mattered because earlier versions could create visible bursts of riders. The final approach keeps demand random, but spreads it out in a way that looks much closer to a real request stream.
+
 ### Why We Chose The Final Meaning Of The Presets
 
 We wanted the presets to mean something specific when we tested them:
@@ -122,6 +141,8 @@ Simulation speed became another major tuning input because it changed how quickl
 - `1X`
 - `2X`
 - `10X`
+- `30X`
+- `60X`
 
 ### Final Clock Behavior
 
@@ -129,6 +150,8 @@ Simulation speed became another major tuning input because it changed how quickl
 - `2X`: `1` real second = `2` simulated minutes
 - `0.5X`: `1` real second = `30` simulated seconds
 - `10X`: `1` real second = `10` simulated minutes
+- `30X`: `1` real second = `30` simulated minutes
+- `60X`: `1` real second = `60` simulated minutes
 
 ### What We Learned From Speed Testing
 
@@ -145,6 +168,7 @@ Examples:
 - at `10X`, we saw drivers jittering around pickup points before movement logic was fixed
 - at `10X` with larger driver counts, we saw riders not being removed correctly after dropoff in earlier versions
 - display and text behavior also exposed problems at higher speed during development
+- at `30X` and `60X`, normal map rendering stopped being useful, which led us to add high-speed summary charts instead of keeping the full visual map on screen
 
 So speed was not just a convenience feature. It became one of the main stress-test inputs.
 
@@ -205,6 +229,8 @@ This is part of why we added:
 - batch mode
 - visible stats
 - event-log download
+- high-speed summary charts
+- driver POV mode
 - virtualization in the text panels
 
 Those features were not only presentation changes. They were part of how we made larger tests possible.
@@ -251,7 +277,7 @@ Examples of how we used those outputs:
 By the end of the project, the main settings we settled on were:
 
 - default grid size: `40`
-- speed presets: `0.5X`, `1X`, `2X`, `10X`
+- speed presets: `0.5X`, `1X`, `2X`, `10X`, `30X`, `60X`
 - busy-ratio presets: `50%`, `65%`, `85%`, `100%`, `120%`
 - common batch test length: `6` hours
 - visible event-log cap: `200`
@@ -272,12 +298,13 @@ The main focus of this document is the tuning process above. For completeness, t
 | Input | Type | What It Does |
 | --- | --- | --- |
 | Pause | Button | Starts or stops the live simulation. |
-| Speed controls | Buttons | Changes simulation speed to `0.5X`, `1X`, `2X`, or `10X`. |
+| Speed controls | Buttons | Changes simulation speed to `0.5X`, `1X`, `2X`, `10X`, `30X`, or `60X`. |
 | Surge | Button | Instantly adds 10 new ride requests. |
 | Text only mode | Toggle button | Turns off map rendering and keeps the text interface. |
 | Grid size | Buttons | Changes the grid size to `5`, `10`, `20`, `40`, or `80`. |
 | Driver count | Input modal | Resets the simulation with a chosen number of drivers. |
 | Target busy ratio | Buttons | Changes the rider spawn target to `50%`, `65%`, `85%`, `100%`, or `120%`. |
+| Driver POV | Click on driver | Centers the view on one driver and shows that driver's HUD and notifications. |
 | Main tabs | Buttons | Switches between `Driver/Rider List`, `Events`, `Settings`, and `Stats`. |
 | List sub-tabs | Buttons | Filters the list view between `All`, `Drivers`, `Riders`, and `Expired`. |
 | Run Batch | Input modal | Runs the simulation for a selected number of simulated hours without normal rendering. |
@@ -303,6 +330,8 @@ The main focus of this document is the tuning process above. For completeness, t
 | Output | Type | Description |
 | --- | --- | --- |
 | Map view | Visual output | Shows the grid, drivers, riders, and active movement. |
+| Driver POV view | Visual output | Follows one selected driver and shows driver-specific details. |
+| High-speed summary charts | Visual output | Replaces the map at `30X` and `60X` with driver/rider bar charts. |
 | Driver/Rider List | Text output | Shows current drivers, waiting riders, and expired riders. |
 | Event log | Text output | Shows timestamped events in the `Events` tab. |
 | Stats tab | Calculated output | Shows wait time, ride time, expired rides per hour, busy-driver percentage, total rides, and total earnings. |

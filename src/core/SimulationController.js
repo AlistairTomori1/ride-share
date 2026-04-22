@@ -102,7 +102,7 @@ export default class SimulationController
         const speedMultiplier = this.simSpeed / this.baseSimSpeed;
         const clockSeconds = deltaSeconds * speedMultiplier * 60;
         this.time += clockSeconds;
-        this.dispatchEngine.update(speedMultiplier);
+        this.dispatchEngine.update(clockSeconds);
         this.moveDrivers(deltaSeconds);
         this.moveRiders();
         this.updateSurge();
@@ -232,6 +232,7 @@ export default class SimulationController
 
                         let tripProfit = this.dispatchEngine.calculateProfit(droppedRider);
                         curr.profits += tripProfit;
+                        curr.tripCount++;
                         this.dispatchEngine.rideAmount++;
                         this.dispatchEngine.totalProfits += tripProfit;
                     }
@@ -258,7 +259,7 @@ export default class SimulationController
             if (curr.state == "PICKED UP")
                 curr.location = curr.assignedDriver.location;
 
-            if (curr.state == "DROPPED OFF")
+            if (curr.state == "DROPPED OFF" || curr.state == "EXPIRED")
                 this.riderList.remove(curr);
 
             curr = next;
@@ -273,7 +274,7 @@ export default class SimulationController
             if (curr.state == "PICKED UP")
                 curr.location = curr.assignedDriver.location;
 
-            if (curr.state == "DROPPED OFF")
+            if (curr.state == "DROPPED OFF" || curr.state == "EXPIRED")
                 this.priorityList.remove(curr);
 
             curr = next;
@@ -283,7 +284,7 @@ export default class SimulationController
     //surge controller
     updateSurge()
     {
-        let ratio = (this.riderList.size + this.priorityList.size) / Math.max(1, this.driverList.size);
+        let ratio = this.dispatchEngine.waitingCount / Math.max(1, this.driverList.size);
         let raw = 1 + 0.25 * (ratio - 1);
         let nextSurge = Math.max(1, Math.min(3, Math.round(raw * 4) / 4));
 
