@@ -1,18 +1,273 @@
 # I/O History
 
-This document explains not only the main inputs and outputs in our ride-share dispatch simulation, but also how we tuned those inputs over time to get the simulation behaving the way we wanted.
+This document focuses on how we used inputs and outputs to tune the simulation while we were building it. By the end of the project, the most important inputs were not just the buttons in the interface. The important inputs were the values we kept changing during testing: driver count, spawn-controller values, busy-ratio targets, simulation speed, grid size, and batch-run length. The most important outputs were the results those changes produced: busy-driver percentage, expirations, rider backlog, movement stability, and long-run stats.
 
-## Purpose
+## Why I/O Mattered In This Project
 
-At the start of the project, we thought of input and output mostly in the simple sense: buttons, driver lists, rider lists, and visual updates. As the project got larger, the input/output side became more important for tuning the simulation. We ended up using a lot of the project controls not just as user features, but as testing tools.
+Early in the project, we mostly thought about input/output in a simple way:
+- input = button presses and settings
+- output = the map, driver list, and rider list
 
-Because of that, this document includes:
-- the main user inputs
-- the main system-generated inputs
-- the outputs the simulation produces
-- the tuning process we used to decide on the final settings
+As the project got more complete, input/output became part of tuning and debugging. We started using the simulation almost like a test bench. We would change one input, run the sim, and then look at measurable outputs to decide if the system was behaving the way we wanted.
 
-## User Inputs
+That is why this document is centered on tuning first.
+
+## Main Tuning Inputs We Used
+
+The most important values we changed while building the sim were:
+- rider spawn logic and spawn-controller gains
+- target busy ratio presets
+- simulation speed
+- driver count
+- grid size
+- batch run length
+
+## 1. Spawn Controller Tuning
+
+The spawn controller was the biggest tuning problem in the whole project. A fixed rider spawn interval was not good enough. It could look fine with one driver count and then fail completely when the number of drivers changed.
+
+### Early Behavior
+
+In early versions, the simulation was tuned mostly by feel while testing with about `5` drivers. That worked well enough visually at first, but as soon as we changed the size of the driver list, the balance broke down.
+
+Examples of what we saw:
+- with small fleets, all drivers could stay overloaded
+- with larger fleets, too many drivers could stay idle
+- spawn timing that looked okay at `5` drivers did not automatically work at `10` drivers or above
+
+### Driver Counts We Tested During Spawn Tuning
+
+| Driver Count | What We Used It For |
+| --- | --- |
+| `5` | early visual testing and basic spawn balance |
+| `10` | small-scale balance testing |
+| `100` | medium-load spawn behavior |
+| `1000` | large-load Level 4 testing |
+| `20000` | stress testing and upper-limit experiments |
+
+### Busy-Ratio Targets We Added
+
+To make the spawn system easier to test, we added busy-ratio targets:
+- `50%`
+- `65%`
+- `85%`
+- `100%`
+- `120%`
+
+This gave us a clearer input scale:
+- `50%` = lots of idle capacity
+- `65%` = moderate demand
+- `85%` = busy but controlled
+- `100%` = drivers should stay almost fully occupied without much queue buildup
+- `120%` = deliberate overload mode
+
+### Results We Actually Got While Tuning
+
+These were some of the useful outputs we recorded while tuning the spawn controller:
+
+| Target Setting | Result We Got | What It Meant |
+| --- | --- | --- |
+| `85%` | about `93%` busy | too much demand, controller was overshooting |
+| all presets | around `85%` busy | controller was not responding strongly enough to the chosen target |
+| `85%` | about `80%` busy | controller had over-corrected too far downward |
+| `100%` | about `63%` busy | controller was not producing enough demand to keep drivers fully busy |
+| `120%` | about `99%` busy | overload mode behaved better than `100%`, which showed the queue target was wrong |
+| `65%` | about `66%` busy | close enough to target |
+| `50%` | about `55%` busy | slightly high, but much closer |
+| `100%` | about `60` expirations per hour | queue was too large for what should have been a balanced full-utilization setting |
+
+Those results were important because they showed that the spawn controller could be wrong in different ways:
+- overshooting
+- undershooting
+- ignoring the chosen preset
+- keeping too much rider backlog
+
+### Controller Values We Adjusted
+
+We changed the controller a lot while tuning it. Some of the specific values we adjusted were:
+
+- proportional busy-error gain: tested values like `0.35`, then `0.45`
+- integral term contribution: `0.015`
+- completion-rate EMA smoothing: `0.10`
+- spawn-rate EMA smoothing: `0.20`
+- queue penalty values: increased up to values like `2.8`
+- rate cap: up to `driverCount * 0.5`
+
+We also changed the allowed waiting queue logic multiple times.
+
+A major decision was:
+- for targets up to `100%`, the desired queue should stay very close to `0`
+- for targets above `100%`, the system is allowed to build more backlog on purpose
+
+That fixed a major problem where `100%` was acting more like overload mode instead of balanced full utilization.
+
+### Why We Chose The Final Meaning Of The Presets
+
+We wanted the presets to mean something specific when we tested them:
+
+- `50%` and `65%` should clearly leave idle drivers
+- `85%` should feel active but stable
+- `100%` should keep drivers occupied without causing heavy expiration
+- `120%` should intentionally stress the system and allow backlog to grow
+
+That made the tuning inputs much more useful than just “slow demand” or “fast demand.”
+
+## 2. Simulation Speed Tuning
+
+Simulation speed became another major tuning input because it changed how quickly we could test time-based behavior and also exposed bugs that did not show up at lower speed.
+
+### Final Speed Presets
+
+- `0.5X`
+- `1X`
+- `2X`
+- `10X`
+
+### Final Clock Behavior
+
+- `1X`: `1` real second = `1` simulated minute
+- `2X`: `1` real second = `2` simulated minutes
+- `0.5X`: `1` real second = `30` simulated seconds
+- `10X`: `1` real second = `10` simulated minutes
+
+### What We Learned From Speed Testing
+
+Speed settings helped us test:
+- rider expiration
+- long-term stats
+- surge behavior
+- event-log growth
+- movement stability
+
+They also exposed bugs.
+
+Examples:
+- at `10X`, we saw drivers jittering around pickup points before movement logic was fixed
+- at `10X` with larger driver counts, we saw riders not being removed correctly after dropoff in earlier versions
+- display and text behavior also exposed problems at higher speed during development
+
+So speed was not just a convenience feature. It became one of the main stress-test inputs.
+
+## 3. Grid Size Tuning
+
+Grid size affected both the look of the simulation and the way bugs were exposed.
+
+### Grid Sizes We Tested
+
+- `5`
+- `10`
+- `20`
+- `40`
+- `80`
+
+### What We Observed
+
+| Grid Size | Result |
+| --- | --- |
+| `5` | very dense, useful for compact testing, but exposed rider spawn-location bugs |
+| `10` | still dense and also exposed spawn-location issues |
+| `20` | moderate density |
+| `40` | best overall balance for normal use |
+| `80` | very spread out, readable, but less practical as a default |
+
+### Final Decision
+
+We chose `40` as the default because it gave the best balance between:
+- readability
+- movement visibility
+- rider spacing
+- normal testing conditions
+
+Smaller grid sizes were still useful during tuning because they helped expose problems. For example, when the grid size was `5` or `10`, we found that riders could spawn incorrectly near the top-left area. That bug might have been much harder to notice if we had only tested one grid size.
+
+## 4. Driver Count Tuning
+
+Driver count was one of the main testing inputs throughout the project.
+
+### Key Driver Counts We Used
+
+| Driver Count | Reason |
+| --- | --- |
+| `5` | early testing |
+| `10` | balancing rider spawn rate |
+| `100` | medium-load testing |
+| `1000` | Level 4 large-load testing |
+| `20000` | extreme stress testing |
+
+### What We Learned
+
+- `5` and `10` were useful for checking whether the simulation looked correct.
+- `100` was where balancing became more meaningful.
+- `1000+` was where performance problems started to matter much more.
+
+This is part of why we added:
+- text-only mode
+- batch mode
+- visible stats
+- event-log download
+- virtualization in the text panels
+
+Those features were not only presentation changes. They were part of how we made larger tests possible.
+
+## 5. Batch Run Tuning
+
+Batch mode became important once we wanted to evaluate the simulation over longer periods instead of only watching short visual runs.
+
+### Main Batch Input We Used
+
+The most important batch input we used was:
+- `6` simulated hours
+
+### What We Used That For
+
+We used longer batch runs to test:
+- average busy-driver percentage
+- expired rides per hour
+- whether the spawn controller was actually matching its target
+- whether stats looked stable over time
+
+### Why It Mattered
+
+A short live run can make the simulation look fine even when the long-run numbers are bad. Batch mode let us judge the system based on data instead of just visual impressions.
+
+## 6. Stats As Tuning Outputs
+
+As the project got more complete, the stats tab became one of the most important outputs.
+
+The main outputs we used while tuning were:
+- average wait time
+- average ride time
+- expired rides per hour
+- average percent of busy drivers
+- total rides done
+
+Examples of how we used those outputs:
+- if busy percentage was too low, demand was probably too weak
+- if expired rides per hour was too high, the queue was probably too large
+- if total rides were increasing but expirations were also high, the controller might still be over-spawning riders
+
+## 7. Final Tuning Decisions
+
+By the end of the project, the main settings we settled on were:
+
+- default grid size: `40`
+- speed presets: `0.5X`, `1X`, `2X`, `10X`
+- busy-ratio presets: `50%`, `65%`, `85%`, `100%`, `120%`
+- common batch test length: `6` hours
+- visible event-log cap: `200`
+- visible expired-rider cap: `200`
+
+We kept those settings because they gave us the best combination of:
+- clear visual testing
+- long-run tuning ability
+- large-load testing support
+- meaningful stats output
+
+## Supporting Input/Output Reference
+
+The main focus of this document is the tuning process above. For completeness, the main simulation inputs and outputs are summarized below.
+
+### User Inputs
 
 | Input | Type | What It Does |
 | --- | --- | --- |
@@ -29,9 +284,7 @@ Because of that, this document includes:
 | Download Event Log | Button | Downloads the full event history as a text file. |
 | Back to Sim | Button | Returns from the end-of-simulation screen to the normal simulation view. |
 
-## System-Generated Inputs
-
-These are values created by the simulation while it is running.
+### System-Generated Inputs
 
 | Generated Input | Description |
 | --- | --- |
@@ -45,7 +298,7 @@ These are values created by the simulation while it is running.
 | Simulated date/time | The simulation keeps its own date and time starting at January 1, 2026, 12:00 AM. |
 | Event records | The system creates assignment, pickup, dropoff, expiration, and surge events. |
 
-## Outputs
+### Main Outputs
 
 | Output | Type | Description |
 | --- | --- | --- |
@@ -57,266 +310,6 @@ These are values created by the simulation while it is running.
 | Downloaded event log | File output | Saves the full event history as a `.txt` file. |
 | Simulation clock | Text output | Shows the current simulated date and time. |
 
-## Tuning History
+## Final Note
 
-## 1. Spawn Controller Tuning
-
-The spawn controller ended up being one of the most important tuning areas in the whole project. We learned pretty quickly that a fixed rider spawn interval was not enough. It could look acceptable for one number of drivers and then behave badly as soon as the fleet size changed.
-
-### Early tuning problem
-
-Our first versions were tuned mostly by feel while testing with around `5` drivers. That made the simulation look okay visually, but once we changed the number of drivers to `10`, the system no longer had the same balance. Too many drivers could end up idle, or all drivers could be overloaded depending on the exact spawn values.
-
-### Driver-count scaling tests
-
-Examples of values we tested:
-- `5` drivers: used early on for visual testing and basic spawn timing
-- `10` drivers: exposed the fact that the original spawn logic did not scale well
-- `100` drivers: used to test whether the spawn controller still behaved realistically under larger load
-- `1000+` drivers: used for Level 4 large-load testing in text-only and batch modes
-
-### Busy-ratio targets we added
-
-To improve tuning, we added preset target busy ratios:
-- `50%`
-- `65%`
-- `85%`
-- `100%`
-- `120%`
-
-This gave us a controlled way to test whether the spawn system was actually reacting to a target instead of just flooding the simulation.
-
-### Measured results during tuning
-
-We got several useful test results while tuning:
-
-| Target | Measured Result | What It Told Us |
-| --- | --- | --- |
-| `85%` | about `93%` busy | the controller was overshooting and creating too much demand |
-| all presets | about `85%` busy | the controller was not responding strongly enough to the chosen target |
-| `85%` | about `80%` busy | the controller had over-corrected the other way |
-| `100%` | about `63%` busy | the controller was not allowing enough demand to keep all drivers busy |
-| `120%` | about `99%` busy | overload mode was working better than `100%`, which showed the queue target was wrong |
-| `65%` | about `66%` busy | this was close enough to the target |
-| `50%` | about `55%` busy | this was slightly high, but much closer |
-| `100%` with overload issue | about `60` expirations per hour | the controller was building too much queue backlog for what should have been a balanced setting |
-
-### What we changed because of those results
-
-We ended up changing the controller several times.
-
-Examples of values we adjusted in the controller:
-- proportional busy-error gain: values such as `0.35`, then `0.45`
-- integral contribution: `0.015`
-- smoothing values: `0.10` for completion-rate EMA and `0.20` for spawn-rate EMA
-- queue penalty values: from smaller penalties up to stronger penalties like `2.8`
-- rate cap: up to `driverCount * 0.5`
-
-We also changed how much queue the controller was allowed to tolerate.
-
-One important decision was:
-- for targets up to `100%`, we set the desired waiting queue very close to zero
-- for targets above `100%`, we allowed a larger queue on purpose
-
-That led to the current idea:
-- `100%` should mean keep drivers busy without large backlog
-- `120%` should mean deliberately overload the system and allow a queue to build
-
-### Final reasoning
-
-The final spawn tuning was based on what we wanted the simulation to mean, not just on what looked visually busy.
-
-We decided:
-- `50%` and `65%` should leave a noticeable amount of driver idle time
-- `85%` should feel busy but still stable
-- `100%` should keep drivers almost fully occupied without causing large expiration numbers
-- `120%` should push the system into overload on purpose
-
-That made the settings more meaningful as test inputs.
-
-## 2. Simulation Speed Tuning
-
-We also tuned the simulation speed settings a lot because speed affects how easy the project is to test.
-
-### Final speed inputs
-
-The final speed presets are:
-- `0.5X`
-- `1X`
-- `2X`
-- `10X`
-
-### Clock tuning
-
-We decided that the displayed simulation clock should move faster than real life.
-
-Final clock behavior:
-- `1X`: `1` real second = `1` simulated minute
-- `2X`: `1` real second = `2` simulated minutes
-- `0.5X`: `1` real second = `30` simulated seconds
-- `10X`: `1` real second = `10` simulated minutes
-
-### Why we chose that
-
-We wanted the simulation to feel active without having to wait a very long time to see time-based behavior like:
-- expiration
-- surge changes
-- event log growth
-- stat changes
-
-### Problems we found during speed tuning
-
-Examples:
-- at `10X`, drivers could jitter over pickup points before movement was corrected
-- at `10X` and larger driver counts, we found a bug where riders were not always being removed correctly after dropoff
-- text color and display behavior also exposed issues at higher speed in earlier versions
-
-These tests showed that speed settings were not just for convenience. They were useful stress tests.
-
-## 3. Driver Count Tuning
-
-The number of drivers became one of our main testing inputs.
-
-### Main values we used
-
-| Driver Count | Why We Used It |
-| --- | --- |
-| `5` | early visual testing |
-| `10` | small simulation balance testing |
-| `100` | medium-load behavior testing |
-| `1000` | large-load testing for Level 4 |
-| `20000` | stress-testing upper limits in high-speed mode |
-
-### What we learned
-
-- Small counts like `5` or `10` are useful for checking movement and UI behavior.
-- Medium counts like `100` are useful for tuning the spawn controller.
-- Large counts like `1000+` are where rendering and full-list scans become much more important.
-
-This is one reason we added:
-- text-only mode
-- batch mode
-- downloadable event logs
-- virtualization in text panels
-
-## 4. Grid Size Tuning
-
-Grid size changed how the simulation looked and how crowded the map felt.
-
-### Grid sizes we included
-
-- `5`
-- `10`
-- `20`
-- `40`
-- `80`
-
-### What we observed
-
-| Grid Size | Result |
-| --- | --- |
-| `5` | very dense, useful for compact testing, but earlier versions exposed spawn-location bugs |
-| `10` | still dense, also helped expose spawn-location bugs |
-| `20` | moderate density |
-| `40` | best overall balance for normal use |
-| `80` | very spread out, useful for a different visual look but less ideal as the default |
-
-### Final choice
-
-We kept `40` as the default because it gave the best balance between:
-- map readability
-- driver movement visibility
-- rider spacing
-- normal testing conditions
-
-The smaller grids were still useful because they exposed bugs. For example, when the grid size was changed to `5` or `10`, we found that ride requests could spawn incorrectly near the top-left corner, which led to a spawn-location fix.
-
-## 5. Batch Run and Large-Load Tuning
-
-Once the project became more complete, we needed a way to test the simulation without relying only on the live visual view.
-
-### Inputs we added
-
-- batch hours input
-- text-only mode
-- downloadable event log
-
-### Common batch test value
-
-A major test case was:
-- `6` simulated hours
-
-We used that run length to test:
-- average busy-driver percentage
-- expired rides per hour
-- whether the spawn controller was actually matching its target
-- how the event log and stats behaved over longer runs
-
-### Why this mattered
-
-Without longer runs, it was too easy to judge the sim only by how it looked for a short time. Batch testing let us use the stats as actual output data instead of just relying on visual impressions.
-
-## 6. Stats as Tuning Output
-
-The stats tab became one of the main outputs we used to evaluate input changes.
-
-The most useful outputs for tuning were:
-- average wait time
-- average ride time
-- expired rides per hour
-- average percent of busy drivers
-- total rides done
-
-Examples of how we used them:
-- if busy percentage was too low, demand was probably too weak
-- if expired rides per hour was too high, the system was probably overloading the rider queue
-- if total rides done was rising but expirations were also high, the controller might still be spawning too aggressively
-
-## Example Tuning Scenarios
-
-### Scenario 1: 100% target created too much queue
-
-- **Input:** `100%` target busy ratio
-- **Observed output:** around `60` expirations per hour
-- **Interpretation:** the controller was allowing too much queue for a setting that should have been balanced
-- **Decision:** reduce the desired waiting queue for `100%` so it behaved like near-full utilization without overload
-
-### Scenario 2: One controller setting worked only for one fleet size
-
-- **Input:** spawn logic tuned around `5` drivers
-- **Observed output:** when changed to `10` drivers, the same settings no longer gave the same driver/rider balance
-- **Interpretation:** the spawn controller needed to scale with fleet size
-- **Decision:** move toward a target-ratio-based controller instead of a fixed spawn pattern
-
-### Scenario 3: High speed exposed logic bugs
-
-- **Input:** `10X` speed
-- **Observed output:** movement jitter and rider cleanup problems became easier to notice
-- **Interpretation:** some logic was only stable at lower speeds
-- **Decision:** fix movement and timing behavior so higher-speed testing was still valid
-
-## Final Input Decisions
-
-The final major input choices were based on what gave us the best mix of realism, testing value, and stability.
-
-### Final chosen defaults / main settings
-
-- default grid size: `40`
-- speed presets: `0.5X`, `1X`, `2X`, `10X`
-- busy-ratio presets: `50%`, `65%`, `85%`, `100%`, `120%`
-- common batch test length: `6` hours
-- visible event log cap: `200`
-- visible expired rider cap: `200`
-
-### Why these made sense
-
-- `40` was the best default grid size visually
-- the speed presets gave both normal testing and stress testing
-- the busy-ratio presets gave clear low, medium, high, full, and overload cases
-- the `6` hour batch run gave enough time for statistics to become meaningful
-
-## Final Notes
-
-This document ended up being more than a simple list of buttons and outputs because the simulation became something we had to actively tune. Many of the most important inputs in the project were the settings we used while testing: driver count, speed, grid size, busy-ratio target, and batch run length.
-
-The outputs that mattered most were not just the visual map. They were the measurable results from the stats tab and the event log. Those outputs helped us decide which numbers were working, which ones were causing overload, and which settings made the project behave the way we wanted.
+In this project, input/output ended up being one of the main ways we improved the simulation. We were constantly adjusting values, running tests, and using the outputs to decide what the system should do next. Because of that, the tuning history above is really the most important part of our I/O history.
