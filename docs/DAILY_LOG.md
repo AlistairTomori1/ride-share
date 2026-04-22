@@ -76,7 +76,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #33](https://github.com/AlistairTomori1/ride-share/issues/33)
 
 **James**
-- Pending update.
+- Worked on the `LinkedList` constructor and `addLink()`.
 
 ## March 10, 2026
 
@@ -86,7 +86,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #34](https://github.com/AlistairTomori1/ride-share/issues/34)
 
 **James**
-- Pending update.
+- Worked on `LinkedList.remove()`.
 
 ## March 11, 2026
 
@@ -96,7 +96,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #35](https://github.com/AlistairTomori1/ride-share/issues/35)
 
 **James**
-- Pending update.
+- Worked on `LinkedList.search()`.
 
 ## March 12, 2026
 
@@ -105,7 +105,55 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #36](https://github.com/AlistairTomori1/ride-share/issues/36)
 
 **James**
+- Worked on `LinkedList.traverse()`.
+
+## March 13, 2026
+
+**Alistair**
 - Pending update.
+
+**James**
+- Worked on `LinkedList.count()`.
+
+## March 16, 2026
+
+**Alistair**
+- Pending update.
+
+**James**
+- Continued working on the UML diagram.
+
+## March 17, 2026
+
+**Alistair**
+- Pending update.
+
+**James**
+- Continued working on the UML diagram.
+
+## March 18, 2026
+
+**Alistair**
+- Pending update.
+
+**James**
+- Continued working on the UML diagram.
+
+## March 19, 2026
+
+**Alistair**
+- Pending update.
+
+**James**
+- Continued working on the UML diagram.
+
+## March 20, 2026
+
+**Alistair**
+- Pending update.
+
+**James**
+- Continued working on the UML diagram.
 
 ## March 23, 2026
 
@@ -114,7 +162,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #37](https://github.com/AlistairTomori1/ride-share/issues/37)
 
 **James**
-- Pending update.
+- Continued working on the UML diagram.
 
 ## March 24, 2026
 
@@ -122,7 +170,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - Continued working on the event log system.
 
 **James**
-- Pending update.
+- Continued working on the UML diagram.
 
 ## March 25, 2026
 
@@ -132,7 +180,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #38](https://github.com/AlistairTomori1/ride-share/issues/38)
 
 **James**
-- Pending update.
+- Continued working on the UML diagram.
 
 ## March 26, 2026
 
@@ -141,7 +189,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #39](https://github.com/AlistairTomori1/ride-share/issues/39)
 
 **James**
-- Pending update.
+- Continued working on the UML diagram.
 
 ## March 27, 2026
 
@@ -152,7 +200,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #40](https://github.com/AlistairTomori1/ride-share/issues/40)
 
 **James**
-- Pending update.
+- Continued working on the UML diagram.
 
 ## March 30, 2026
 
@@ -162,7 +210,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #41](https://github.com/AlistairTomori1/ride-share/issues/41)
 
 **James**
-- Pending update.
+- Finished the UML diagram.
 
 ## March 31, 2026
 
@@ -172,7 +220,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #42](https://github.com/AlistairTomori1/ride-share/issues/42)
 
 **James**
-- Pending update.
+- Reviewed `constructor`, `recordEvent()`, `update()`, and `matchDriverToSingle()` in `DispatchEngine`.
 
 ## April 1, 2026
 
@@ -182,7 +230,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #43](https://github.com/AlistairTomori1/ride-share/issues/43), [Issue #44](https://github.com/AlistairTomori1/ride-share/issues/44), [PR #45](https://github.com/AlistairTomori1/ride-share/pull/45)
 
 **James**
-- Pending update.
+- Reviewed `matchRiderToSingle()` and `assignDriver()` in `DispatchEngine`.
 
 ## April 2, 2026
 
@@ -195,7 +243,15 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #46](https://github.com/AlistairTomori1/ride-share/issues/46), [Issue #47](https://github.com/AlistairTomori1/ride-share/issues/47), [Issue #49](https://github.com/AlistairTomori1/ride-share/issues/49), [Issue #51](https://github.com/AlistairTomori1/ride-share/issues/51), [Issue #52](https://github.com/AlistairTomori1/ride-share/issues/52), [Issue #53](https://github.com/AlistairTomori1/ride-share/issues/53), [PR #54](https://github.com/AlistairTomori1/ride-share/pull/54)
 
 **James**
+- Reviewed `updateBusyDrivers()`, `updateWaitingRiders()`, `calculateProfit()`, and `trackExpiredRider()` in `DispatchEngine`.
+
+## April 7, 2026
+
+**Alistair**
 - Pending update.
+
+**James**
+- Reviewed `constructor`, `getSimDate()`, `getFormattedSimTime()`, and `initializeEventExportLog()` in `SimulationController`.
 
 ## April 8, 2026
 
@@ -206,7 +262,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #48](https://github.com/AlistairTomori1/ride-share/issues/48)
 
 **James**
-- Pending update.
+- Reviewed `addDriver()`, `addRider()`, `tick()`, `runSim()`, and `moveValueTowards()` in `SimulationController`.
 
 ## April 9, 2026
 
@@ -217,7 +273,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #56](https://github.com/AlistairTomori1/ride-share/issues/56), [Issue #57](https://github.com/AlistairTomori1/ride-share/issues/57)
 
 **James**
-- Pending update.
+- Reviewed `isAtTarget()`, `moveDrivers()`, `moveRiders()`, `updateSurge()`, and `expireOldEvents()` in `SimulationController`.
 
 ## April 10, 2026
 
@@ -229,7 +285,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #63](https://github.com/AlistairTomori1/ride-share/issues/63), [Issue #66](https://github.com/AlistairTomori1/ride-share/issues/66), [Issue #67](https://github.com/AlistairTomori1/ride-share/issues/67), [PR #68](https://github.com/AlistairTomori1/ride-share/pull/68)
 
 **James**
-- Pending update.
+- Reviewed the `LinkedList` and `Node` classes.
 
 ## April 13, 2026
 
@@ -237,7 +293,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - Added the refactoring document.
 
 **James**
-- Pending update.
+- Reviewed the `Driver`, `Event`, `ExpiredList`, and `RideRequest` classes.
 
 ## April 14, 2026
 
@@ -246,6 +302,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 
 **James**
 - Completed the Stage 2 interview.
+- Reviewed the `Scoring` class.
 
 ## April 15, 2026
 
@@ -255,7 +312,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #71](https://github.com/AlistairTomori1/ride-share/issues/71), [Issue #74](https://github.com/AlistairTomori1/ride-share/issues/74), [PR #69](https://github.com/AlistairTomori1/ride-share/pull/69), [PR #72](https://github.com/AlistairTomori1/ride-share/pull/72)
 
 **James**
-- Pending update.
+- Reviewed `setup()` and `draw()` in `sketch.js`.
 
 ## April 16, 2026
 
@@ -264,7 +321,15 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #75](https://github.com/AlistairTomori1/ride-share/issues/75)
 
 **James**
+- Reviewed `spawnController()`, `spawnRider()`, and `getCount()` in `sketch.js`.
+
+## April 17, 2026
+
+**Alistair**
 - Pending update.
+
+**James**
+- Reviewed `spawnDriver()`, `getCapacity()`, `drawGrid()`, and `drawRoute()` in `sketch.js`.
 
 ## April 20, 2026
 
@@ -274,7 +339,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #76](https://github.com/AlistairTomori1/ride-share/issues/76), [Issue #77](https://github.com/AlistairTomori1/ride-share/issues/77), [Issue #78](https://github.com/AlistairTomori1/ride-share/issues/78), [Issue #82](https://github.com/AlistairTomori1/ride-share/issues/82), [PR #79](https://github.com/AlistairTomori1/ride-share/pull/79), [PR #80](https://github.com/AlistairTomori1/ride-share/pull/80), [PR #81](https://github.com/AlistairTomori1/ride-share/pull/81), [PR #83](https://github.com/AlistairTomori1/ride-share/pull/83)
 
 **James**
-- Pending update.
+- Reviewed `drawDrivers()`, `drawRiderList()`, `drawRiders()`, and `downloadEventLog()` in `sketch.js`.
 
 ## April 21, 2026
 
@@ -285,4 +350,12 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #89](https://github.com/AlistairTomori1/ride-share/issues/89)
 
 **James**
+- Reviewed `seedSimulation()`, `resetFrameTiming()`, `resetUiState()`, `resetSimulationState()`, `resetSimulationForBatch()`, and `resetSimulationForDriverCount()` in `sketch.js`.
+
+## April 22, 2026
+
+**Alistair**
 - Pending update.
+
+**James**
+- Reviewed `startBatchRun()`, `runBatchChunk()`, `finishBatchRun()`, `drawBatchScreen()`, `drawManhattanRoute()`, `getStatsTabLayout()`, and `getListSubTabLayout()` in `sketch.js`.
