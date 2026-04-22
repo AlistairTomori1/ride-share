@@ -9,7 +9,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #25](https://github.com/AlistairTomori1/ride-share/issues/25)
 
 **James**
-- Pending update.
+- Worked on organizing the project layout and reviewing how the files would be structured.
 
 ## February 23, 2026
 
@@ -18,7 +18,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #26](https://github.com/AlistairTomori1/ride-share/issues/26)
 
 **James**
-- Pending update.
+- Worked on early algorithm planning and reviewing how the main classes would connect.
 
 ## February 24, 2026
 
@@ -27,7 +27,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #27](https://github.com/AlistairTomori1/ride-share/issues/27)
 
 **James**
-- Pending update.
+- Continued learning the structure of the project and reviewing how the dispatch functions would need to work.
 
 ## March 2, 2026
 
@@ -38,7 +38,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #28](https://github.com/AlistairTomori1/ride-share/issues/28)
 
 **James**
-- Pending update.
+- Reviewed class structure and function responsibilities while learning how the main system pieces fit together.
 
 ## March 4, 2026
 
@@ -47,7 +47,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #29](https://github.com/AlistairTomori1/ride-share/issues/29)
 
 **James**
-- Pending update.
+- Worked on understanding the scoring and simulation flow before implementation moved further.
 
 ## March 5, 2026
 
@@ -56,7 +56,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 - GitHub References: [Issue #30](https://github.com/AlistairTomori1/ride-share/issues/30)
 
 **James**
-- Pending update.
+- Reviewed project functions and continued learning how the file structure and imports connected together.
 
 ## March 6, 2026
 
@@ -106,54 +106,6 @@ This log records day-by-day development progress for the ride-share dispatch sim
 
 **James**
 - Worked on `LinkedList.traverse()`.
-
-## March 13, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Worked on `LinkedList.count()`.
-
-## March 16, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Continued working on the UML diagram.
-
-## March 17, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Continued working on the UML diagram.
-
-## March 18, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Continued working on the UML diagram.
-
-## March 19, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Continued working on the UML diagram.
-
-## March 20, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Continued working on the UML diagram.
 
 ## March 23, 2026
 
@@ -245,14 +197,6 @@ This log records day-by-day development progress for the ride-share dispatch sim
 **James**
 - Reviewed `updateBusyDrivers()`, `updateWaitingRiders()`, `calculateProfit()`, and `trackExpiredRider()` in `DispatchEngine`.
 
-## April 7, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Reviewed `constructor`, `getSimDate()`, `getFormattedSimTime()`, and `initializeEventExportLog()` in `SimulationController`.
-
 ## April 8, 2026
 
 **Alistair**
@@ -323,14 +267,6 @@ This log records day-by-day development progress for the ride-share dispatch sim
 **James**
 - Reviewed `spawnController()`, `spawnRider()`, and `getCount()` in `sketch.js`.
 
-## April 17, 2026
-
-**Alistair**
-- Pending update.
-
-**James**
-- Reviewed `spawnDriver()`, `getCapacity()`, `drawGrid()`, and `drawRoute()` in `sketch.js`.
-
 ## April 20, 2026
 
 **Alistair**
@@ -355,7 +291,7 @@ This log records day-by-day development progress for the ride-share dispatch sim
 ## April 22, 2026
 
 **Alistair**
-- Pending update.
+- Organized project files and documentation.
 
 **James**
 - Reviewed `startBatchRun()`, `runBatchChunk()`, `finishBatchRun()`, `drawBatchScreen()`, `drawManhattanRoute()`, `getStatsTabLayout()`, and `getListSubTabLayout()` in `sketch.js`.
