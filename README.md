@@ -2,6 +2,8 @@
 
 This is our ride-share dispatch simulation project for ICS4U. The system uses custom linked lists to manage drivers, ride requests, expired riders, and the visible event log.
 
+To access our planning and task tracking, open the repository's **Projects** tab and select the **Ride Share Project** board.
+
 ## Project Documents
 
 - [Daily Logs](docs/DAILY_LOG.md)
