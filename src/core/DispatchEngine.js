@@ -109,7 +109,7 @@ export default class DispatchEngine
         {
             if (currRider.state == "WAITING")
             {
-                currScore = this.scoring.calculateScore(driver, currRider);
+                currScore = this.scoring.calculateScore(driver, currRider, this.time());
                 if (currScore < bestScore)
                 {
                     bestScore = currScore;
