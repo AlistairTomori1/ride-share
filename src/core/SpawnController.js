@@ -5,20 +5,27 @@ export default class SpawnController
         this.reset();
     }
 
-    reset()
+    reset(simulation = null)
     {
         this.rideRate = 0;
         this.spawnRate = 0;
-        this.lastRideCount = 0;
+        this.lastRideCount = simulation ? simulation.dispatchEngine.rideAmount : 0;
         this.avgBusy = 0;
         this.demandMult = 1;
         this.noiseValue = 0;
         this.noiseGoal = 0;
         this.noiseTimer = 0;
+        this.warmupTime = 60;
     }
 
-    update(deltaSeconds, simulation, targetBusyRatio, spawnRider)
+    update(deltaSeconds, simulation, targetBusyRatio, realisticMode, spawnRider)
     {
+        if (realisticMode)
+        {
+            this.updateRealistic(deltaSeconds, simulation, spawnRider);
+            return;
+        }
+
         // get the main values from the sim
         const driverCount = Math.max(1, simulation.driverList.size);
         const simSeconds = deltaSeconds * 60 * (simulation.simSpeed / simulation.baseSimSpeed);
@@ -63,10 +70,46 @@ export default class SpawnController
         if (waitPerDriver > targetWait + 0.05)
             rate *= 0.65;
 
+        rate *= this.getWarmupAmount(simSeconds);
         rate = Math.max(0, Math.min(rate, driverCount * 0.08));
         this.spawnRate += (rate - this.spawnRate) * (1 - Math.exp(-simSeconds / 90));
 
         this.spawnRidersAtRate(this.spawnRate, simSeconds, spawnRider);
+    }
+
+    updateRealistic(deltaSeconds, simulation, spawnRider)
+    {
+        const driverCount = Math.max(1, simulation.driverList.size);
+        const simSeconds = deltaSeconds * 60 * (simulation.simSpeed / simulation.baseSimSpeed);
+        const serviceMinutes = this.getServiceMinutes(simulation);
+        const targetLoad = 0.78;
+
+        this.noiseTimer -= simSeconds;
+        if (this.noiseTimer <= 0)
+        {
+            this.noiseGoal = (Math.random() * 2) - 1;
+            this.noiseTimer = 180 + (Math.random() * 240);
+        }
+
+        this.noiseValue += (this.noiseGoal - this.noiseValue) * (1 - Math.exp(-simSeconds / 180));
+
+        let rate = ((driverCount * targetLoad) / (serviceMinutes * 60)) * 1.02;
+        rate *= 1 + (this.noiseValue * 0.20);
+        rate *= this.getWarmupAmount(simSeconds);
+        rate = Math.max(0, Math.min(rate, driverCount * 0.06));
+        this.spawnRate += (rate - this.spawnRate) * (1 - Math.exp(-simSeconds / 180));
+
+        this.spawnRidersAtRate(this.spawnRate, simSeconds, spawnRider);
+    }
+
+    getWarmupAmount(simSeconds)
+    {
+        if (this.warmupTime <= 0)
+            return 1;
+
+        const amount = 1 - Math.min(1, this.warmupTime / 60);
+        this.warmupTime = Math.max(0, this.warmupTime - simSeconds);
+        return amount;
     }
 
     getServiceMinutes(simulation)
