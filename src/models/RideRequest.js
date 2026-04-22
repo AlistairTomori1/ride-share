@@ -10,6 +10,7 @@ export default class RideRequest extends Node
         this.state = "WAITING";
         this.assignedDriver = null;
         this.waitTimer = 600;
+        this.initialWaitTimer = this.waitTimer;
         this.priority = priority;
         this.cost;
         this.spawnTime = spawnTime;
