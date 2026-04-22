@@ -41,17 +41,18 @@ export default class Scoring
 
     }
 
-    scoreWaiting(rider)
+    scoreWaiting(rider, date)
     {
         if (rider.state === "WAITING")
         {
-            let wait = (this.getSimDate() - curr.assignedRider.spawnTime)
+            let wait = (date - rider.spawnTime)/60000
+            console.log(wait);
             return(wait);
         }
     }
 
-    calculateScore(driver, rider)
+    calculateScore(driver, rider, date)
     {
-        return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider) + this.scoreWaiting(rider));
+        return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider) + this.scoreWaiting(rider, date));
     }
 }

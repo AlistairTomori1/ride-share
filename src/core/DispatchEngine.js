@@ -4,7 +4,7 @@ import Event from "../models/Event.js";
 import ExpiredList from "../models/ExpiredList.js";
 export default class DispatchEngine
 {
-    constructor(DriverList, RiderList, priorityList, eventLog, getCurrentTime, shouldLogEvents)
+    constructor(DriverList, RiderList, priorityList, eventLog, getCurrentTime, shouldLogEvents, time)
     {
         this.DriverList = DriverList;
         this.RiderList = RiderList;
@@ -21,6 +21,7 @@ export default class DispatchEngine
         this.shouldLogEvents = shouldLogEvents;
         this.fullEventLogLines = [];
         this.rideAmount = 0;
+        this.time = time;
     }
 
     //adds each event to log
@@ -56,7 +57,7 @@ export default class DispatchEngine
         {
             if (currDriver.state == "AVAILABLE")
             {
-                currScore = this.scoring.calculateScore(currDriver, rider);
+                currScore = this.scoring.calculateScore(currDriver, rider, this.time());
                 if (currScore < bestScore)
                 {
                     bestScore = currScore;
@@ -85,7 +86,7 @@ export default class DispatchEngine
         {
             if (currRider.state == "WAITING")
             {
-                currScore = this.scoring.calculateScore(driver, currRider);
+                currScore = this.scoring.calculateScore(driver, currRider, this.time());
                 if (currScore < bestScore)
                 {
                     bestScore = currScore;

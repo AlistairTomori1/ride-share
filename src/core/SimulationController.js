@@ -20,7 +20,8 @@ export default class SimulationController
             this.priorityList,
             this.eventLog,
             () => this.getFormattedSimTime(),
-            () => this.loggingEnabled
+            () => this.loggingEnabled,
+            () => this.getSimDate()
         );
         this.initializeEventExportLog();
         //normal sim speed is 100
