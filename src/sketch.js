@@ -33,6 +33,7 @@ let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let targetBusyRatio = 0.85;
+let realisticSpawnMode = false;
 let eventWrapCache = new WeakMap();
 let eventWrapCacheWidth = -1;
 let cachedEventContentHeight = 0;
@@ -150,7 +151,7 @@ function draw()
 //decides wether or not to spawn a rider
 function spawnController(deltaSeconds)
 {
-    Spawner.update(deltaSeconds, Simulation, targetBusyRatio, () =>
+    Spawner.update(deltaSeconds, Simulation, targetBusyRatio, realisticSpawnMode, () =>
     {
         spawnRider(riderLength);
         riderLength += 1;
@@ -365,7 +366,7 @@ function seedSimulation(driverCount = 10, riderCount = 10)
 {
     riderLength = 0;
     nextDriverId = 0;
-    Spawner.reset();
+    Spawner.reset(Simulation);
 
     for (let i = 0; i < driverCount; i++)
     {
@@ -1145,11 +1146,19 @@ function drawTargetRatioButtons()
 {
     const { targetRatioY } = getSettingsLayout();
     const startX = statsPanelX + statsPadding;
+    const activeRatio = realisticSpawnMode ? null : targetBusyRatio;
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "12px serif";
-    ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioY + 14);
-    drawButtonRow(startX, targetRatioY + 20, 34, speedButtonHeight, 4, getTargetRatioButtonItems(), targetBusyRatio);
+    if (realisticSpawnMode)
+        ctx.fillText("Spawn mode: Realistic", startX, targetRatioY + 14);
+    else
+        ctx.fillText("Target busy: " + Math.round(targetBusyRatio * 100) + "%", startX, targetRatioY + 14);
+    drawButtonRow(startX, targetRatioY + 20, 34, speedButtonHeight, 4, getTargetRatioButtonItems(), activeRatio);
+    ctx.fillStyle = realisticSpawnMode ? "#ffffff" : "#4f4f4f";
+    ctx.fillRect(startX, targetRatioY + 44, 90, speedButtonHeight);
+    ctx.fillStyle = realisticSpawnMode ? "#1e1e1e" : "#ffffff";
+    ctx.fillText("Realistic", startX + 16, targetRatioY + 58);
 }
 
 function drawStatsTabs(tabLayout, tabFont)
@@ -1741,7 +1750,20 @@ function onStatsPanelMouseDown(event)
         );
         if (selectedTargetRatio !== null)
         {
+            if (realisticSpawnMode)
+                realisticSpawnMode = false;
+            Spawner.reset(Simulation);
             targetBusyRatio = selectedTargetRatio;
+            return;
+        }
+
+        if (isPointInRect(mouseX, mouseY, statsPanelX + statsPadding, settingsLayout.targetRatioY + 44, 90, speedButtonHeight))
+        {
+            if (!realisticSpawnMode)
+            {
+                realisticSpawnMode = true;
+                Spawner.reset(Simulation);
+            }
             return;
         }
     }
