@@ -20,6 +20,7 @@ This document explains the time complexity of the current version of our ride-sh
 Our score is made of three parts:
 
 - `scoreDistance()` -> `O(1)`
+- `scoreWaitTime()` -> `O(1)`
 - `scoreCapacity()` -> `O(1)`
 - `scoreAmenities()` -> `O(A_r * A_d)`
 
@@ -105,7 +106,7 @@ Reason:
 - appends one node to the visible linked-list event log
 - removes one old visible event if the visible log exceeds the cap
 
-### `DispatchEngine.updateWaitingRiders(speedMultiplier)`
+### `DispatchEngine.updateWaitingRiders(deltaSimSeconds)`
 
 **Time Complexity:** `O(P + R) = O(N)`
 
@@ -156,14 +157,14 @@ O(D * (P + R) * K)
 Reason:
 - scans both rider lists
 - updates picked-up rider positions
-- removes dropped-off riders in `O(1)` each
+- removes dropped-off or expired riders in `O(1)` each
 
 ### `SimulationController.updateSurge()`
 
 **Time Complexity:** `O(1)`
 
 Reason:
-- uses stored list sizes
+- uses cached waiting-rider count
 - computes the next surge multiplier
 - optionally records a surge event
 
@@ -245,6 +246,17 @@ O(1 + S * D * K) = O(S * D * K)
 
 Under heavier demand, this becomes another important bottleneck.
 
+### `spawnPoissonArrivals(ratePerSimSecond, controllerSeconds)`
+
+**Time Complexity:** `O(S)`
+
+Reason:
+- splits a long simulated update into smaller slices
+- samples the number of arrivals in each slice
+- spawns `S` riders total across the update
+
+The expensive work is still the rider creation and matching triggered by each spawned rider.
+
 ## Space Complexity
 
 Main stored structures:
@@ -269,7 +281,7 @@ The main runtime bottlenecks in our current design are:
 1. `matchDriverToSingle()` -> `O(D * K)`
 2. `matchRiderToSingle()` -> `O(N * K)`
 3. `moveDrivers()` when many drivers finish trips in the same tick
-4. `spawnController()` when many riders are spawned at once
+4. `spawnController()` and `spawnPoissonArrivals()` when many riders are spawned at once
 
 ## Final Summary
 

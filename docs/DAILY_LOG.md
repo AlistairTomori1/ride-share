@@ -292,6 +292,8 @@ This log records day-by-day development progress for the ride-share dispatch sim
 
 **Alistair**
 - Organized project files and documentation.
+- Added driver POV mode so the camera can follow a selected driver and show driver-specific information.
+- Reworked the spawn controller to make rider demand look more natural and realistic over time.
 
 **James**
 - Reviewed `startBatchRun()`, `runBatchChunk()`, `finishBatchRun()`, `drawBatchScreen()`, `drawManhattanRoute()`, `getStatsTabLayout()`, and `getListSubTabLayout()` in `sketch.js`.
