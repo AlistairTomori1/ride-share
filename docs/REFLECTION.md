@@ -8,17 +8,17 @@ We also learned that this project was much more about system design than just wr
 
 ## What Went Well
 
-One part of the project that went well was the overall modular structure. Separating the project into `LinkedList`, `DispatchEngine`, `SimulationController`, model classes, and `sketch.js` made it easier to keep expanding the system without everything collapsing into one file. That separation became more important as we added Level 4 features like text-only mode, batch runs, stats, and the downloadable event log.
+One part of the project that went well was the overall structure. Separating the project into `LinkedList`, `DispatchEngine`, `SimulationController`, model classes, and `sketch.js` made it easier to keep expanding the system without everything collapsing into one file. That separation became more important as we added Level 4 features like text-only mode, batch runs, stats, and the downloadable event log.
 
 Another part that went well was building around linked lists the whole way through instead of treating them like a small requirement at the beginning. We used linked lists for the driver list, rider list, priority rider list, expired rider list, and visible event log. That helped keep the project aligned with the actual goal of the assignment.
 
-We also think the simulation became much stronger once we added better debugging visibility. Features like the event log, the stats tab, text-only mode, and batch simulation made it much easier to test the system and understand what it was doing. Those tools were not just presentation features. They made it possible to tune and improve the simulation in a more serious way.
+We also think the simulation became much stronger once we added better debugging visibility. Features like the event log, the stats tab, text-only mode, and batch simulation made it much easier to test the system and understand what it was doing. Those tools made it possible to tune and improve the simulation, rather than just being a visual feature.
 
 ## Challenges We Ran Into
 
-The biggest challenge was performance and scaling. The simulation worked much earlier than it worked well. Once we started increasing the number of drivers and riders, problems showed up quickly. Matching drivers to riders and riders back to drivers still depends on scanning through full linked lists, so large runs exposed the cost of that design. That forced us to think more carefully about when matching should run, how much rendering was costing, and what needed to be optimized first.
+The biggest challenge was performance and scaling. Once we started increasing the number of drivers and riders, problems were showing up. Matching drivers to riders and riders back to drivers still depends on scanning through full linked lists, so large runs exposed the cost of that design. That forced us to think more carefully about when matching should run, how much rendering was costing, and what needed to be optimized first.
 
-Another challenge was tuning the spawn controller. It was not enough to just spawn riders at a fixed rate. That might look fine for one driver count and then behave completely differently when the number of drivers changes. We spent a lot of time adjusting the spawn logic so the system could aim for a target busy ratio instead of only looking acceptable in one small test case.
+Another challenge was tuning the spawn controller. At first we just spawned riders as a fixed rate. However, we soon found out it was not enough. It might look fine for one driver count and then behave completely differently when the number of drivers changes. We spent a lot of time adjusting the spawn logic so the system could aim for a target busy ratio instead of only looking acceptable in one small test case.
 
 We also had to deal with bugs that only appeared at higher speed or larger scale. For example, movement bugs, rider cleanup bugs, and event-log issues were much harder to notice in small runs than in fast or large ones. That taught us that a simulation can appear correct under normal conditions but still break under stress.
 
@@ -26,9 +26,9 @@ We also had to deal with bugs that only appeared at higher speed or larger scale
 
 This project made the strengths and limits of linked lists much clearer. Linked lists worked well for insertions, removals, and maintaining ordered event/history structures. They were especially useful for things like removing expired or dropped-off riders once the node was known.
 
-At the same time, this project also showed us that linked lists do not automatically make a system fast. The real bottleneck in our project is not insertion or removal. It is the repeated full-list scanning used by the dispatch algorithm. That was a useful lesson because it made the time complexity analysis feel practical instead of theoretical.
+At the same time, this project also showed us that linked lists do not automatically make a system fast. The real bottleneck in our project is not insertion or removal. It is the repeated full-list scanning used by the dispatch algorithm. That was a useful lesson because it made the time complexity analysis feel more practical and useable.
 
-We also learned that algorithm design decisions matter more as the project gets larger. A system that feels fine at 10 drivers can behave very differently at 100 or 1000. That was one of the biggest differences between just “making it work” and trying to build something that actually fits the Level 4 expectations.
+We also learned that algorithm design decisions matter more as the project gets larger. A system that feels fine at 10 drivers can behave very differently at 25 or 100. That was one of the biggest differences between just “making it work” and trying to build something that actually fits the Level 4 expectations.
 
 ## Level 4 Features and Growth
 
@@ -43,7 +43,7 @@ Those include:
 - GitHub issues, pull requests, and project tracking
 - refactoring and performance discussion
 
-More importantly, we think the Level 4 part is not just the feature list. It is the fact that we spent time thinking about scaling, workflow, testing, and tradeoffs. We had to move from just building the simulation to also analyzing how well it works, where it breaks down, and what kind of changes improve it.
+More importantly, we think the Level 4 part is more determained by the fact that we spent time thinking about scaling, workflow, testing, and tradeoffs. We had to move from building the simulation to also analyzing how well it works, where it breaks down, and what kind of changes improve it.
 
 ## Limitations
 
@@ -63,6 +63,6 @@ Another improvement would be making the simulation data easier to inspect after 
 
 ## Final Thoughts
 
-Overall, we think this project was a good example of how data structures, algorithms, simulation logic, and software development practices all connect. The final system is much more complete than what we started with, and the biggest progress was not just adding features. It was learning how to organize the system, debug it under stress, and improve it in ways that actually mattered.
+Overall, we think this project was a good example of how data structures, algorithms, simulation logic, and software development practices all connect. The final system is much more complete than what we started with, and the biggest progress was from learning how to organize the system, debug it under stress, and improve it in ways that make it realistic.
 
-The final version shows the linked-list requirement clearly, but it also shows the bigger ideas behind the course: modular design, algorithm analysis, performance tradeoffs, and iterative improvement. That is what we think makes the project a strong final submission.
+The final version shows the linked-list requirement clearly, as well as the bigger ideas behind the course: modular design, algorithm analysis, performance tradeoffs, and iterative improvement. That is what we think makes the project a very good final submission.
