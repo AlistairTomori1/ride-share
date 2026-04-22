@@ -172,43 +172,6 @@ function spawnController(deltaSeconds)
     }
 }
 
-function openInputModal(title, defaultValue, onSubmit)
-{
-    activeInputSubmit = onSubmit;
-    inputModalTitle.textContent = title;
-    inputModalField.value = String(defaultValue);
-    inputModal.style.display = "flex";
-    inputModalField.focus();
-    inputModalField.select();
-}
-
-function closeInputModal()
-{
-    inputModal.style.display = "none";
-    activeInputSubmit = null;
-}
-
-function submitInputModal()
-{
-    if (activeInputSubmit !== null)
-        activeInputSubmit(inputModalField.value);
-    closeInputModal();
-}
-
-function onInputModalMouseDown(event)
-{
-    if (event.target === inputModal)
-        closeInputModal();
-}
-
-function onInputModalKeyDown(event)
-{
-    if (event.key === "Enter")
-        submitInputModal();
-    else if (event.key === "Escape")
-        closeInputModal();
-}
-
 //add a rider with their own properties
 function spawnRider(id)
 {
@@ -556,6 +519,7 @@ function drawManhattanRoute(fromX, fromY, toX, toY)
     ctx.stroke();
 }
 
+//AI IMPLEMENTED \/ \/
 function getStatsTabLayout()
 {
     const tabX = statsPanelX + statsPadding;
@@ -1532,6 +1496,45 @@ function onStatsPanelMouseDown(event)
             downloadEventLog();
     }
 }
+
+function openInputModal(title, defaultValue, onSubmit)
+{
+    activeInputSubmit = onSubmit;
+    inputModalTitle.textContent = title;
+    inputModalField.value = String(defaultValue);
+    inputModal.style.display = "flex";
+    inputModalField.focus();
+    inputModalField.select();
+}
+
+function closeInputModal()
+{
+    inputModal.style.display = "none";
+    activeInputSubmit = null;
+}
+
+function submitInputModal()
+{
+    if (activeInputSubmit !== null)
+        activeInputSubmit(inputModalField.value);
+    closeInputModal();
+}
+
+function onInputModalMouseDown(event)
+{
+    if (event.target === inputModal)
+        closeInputModal();
+}
+
+function onInputModalKeyDown(event)
+{
+    if (event.key === "Enter")
+        submitInputModal();
+    else if (event.key === "Escape")
+        closeInputModal();
+}
+
+//AI IMPLEMENTED END ^^^
 
 
 
