@@ -37,9 +37,9 @@ export default class DispatchEngine
         }
     }
 
-    update(speedMultiplier = 1)
+    update(deltaSimSeconds = 1)
     {
-        this.updateWaitingRiders(speedMultiplier);
+        this.updateWaitingRiders(deltaSimSeconds);
         //this.updateBusyDrivers();
         //this.matchDriversToRides();
     }
@@ -167,7 +167,7 @@ export default class DispatchEngine
     }
 
     //this checks the rider location to update its state
-    updateWaitingRiders(speedMultiplier = 1)
+    updateWaitingRiders(deltaSimSeconds = 1)
     {
         let curr = this.RiderList.head;
 
@@ -177,7 +177,7 @@ export default class DispatchEngine
 
             if (rider.state === "WAITING" && rider.assignedDriver === null)
             {
-                rider.waitTimer -= speedMultiplier;
+                rider.waitTimer -= deltaSimSeconds;
 
                 if (rider.waitTimer <= 0)
                 {
@@ -204,7 +204,7 @@ export default class DispatchEngine
 
             if (rider.state === "WAITING" && rider.assignedDriver === null)
             {
-                rider.waitTimer -= speedMultiplier;
+                rider.waitTimer -= deltaSimSeconds;
 
                 if (rider.waitTimer <= 0)
                 {
@@ -240,4 +240,3 @@ export default class DispatchEngine
     }
 
 }
-

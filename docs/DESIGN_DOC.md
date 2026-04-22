@@ -40,6 +40,7 @@ Represents one driver in the simulation.
 - `assignedRider`
 - `rotation`
 - `profits`
+- `tripCount`
 
 ### `RideRequest`
 
@@ -54,6 +55,7 @@ Represents one rider request.
 - `state`
 - `assignedDriver`
 - `waitTimer`
+- `initialWaitTimer`
 - `priority`
 - `spawnTime`
 - `pickupTime`
@@ -68,6 +70,8 @@ Represents one recorded system event.
 - `driver`
 - `rider`
 - `event`
+- `length`
+- `surge`
 
 ### `ExpiredList`
 
@@ -86,6 +90,7 @@ Handles matching, expiration, event recording, and dispatch-side counters.
 - expire waiting riders
 - calculate ride profit
 - record visible and downloadable events
+- maintain cached counts such as `availableCount`, `waitingCount`, `rideAmount`, and `expireCount`
 
 ### `SimulationController`
 
@@ -99,13 +104,14 @@ Controls the full simulation update process.
 - update surge
 - update statistics
 - manage event export setup
+- maintain averages for wait time, ride time, busy percentage, and expired rides per hour
 
 ## Main Relationships
 
 - `SimulationController` owns the main linked lists and calls `DispatchEngine`
 - `DispatchEngine` reads and updates the driver and rider linked lists
 - `Driver`, `RideRequest`, and `Event` all connect back into linked-list storage
-- `sketch.js` handles rendering and user controls, while the simulation logic stays in the controller classes
+- `sketch.js` handles rendering, user controls, batch-run flow, high-speed chart mode, and driver POV mode, while the simulation logic stays in the controller classes
 
 ## Design Intention
 

@@ -1,10 +1,16 @@
 import SimulationController from "./core/SimulationController.js";
+import SpawnController from "./core/SpawnController.js";
 import RideRequest from "./models/RideRequest.js";
 import Driver from "./models/Driver.js";
 let Simulation = new SimulationController();
+let Spawner = new SpawnController();
 let canvas, ctx;
 let inputModal, inputModalTitle, inputModalField, inputModalOk, inputModalCancel;
 let activeInputSubmit = null;
+let driverPovMode = false;
+let selectedDriver = null;
+let selectedDriverLastAssignedRiderId = null;
+let driverNotifications = [];
 let riderLength = 0;
 let nextDriverId = 0;
 let height = 800;
@@ -16,7 +22,7 @@ let statsPanelX = textOnlyMode ? 0 : 1200 + 12;
 const statsPadding = 10;
 const pauseButtonY = 88;
 const speedButtonHeight = 20;
-const listSubTabY = pauseButtonY + speedButtonHeight + 8;
+const listSubTabY = pauseButtonY + (speedButtonHeight * 2) + 12;
 const statsLineHeight = 24;
 let lastFrameTime = performance.now();
 let simAccumulator = 0;
@@ -27,11 +33,6 @@ let statsContentHeight = 0;
 const baseSimulationSpeed = Simulation.simSpeed;
 let activeSpeedMultiplier = 1;
 let targetBusyRatio = 0.85;
-let spawnBudget = 0;
-let completionRateEma = 0;
-let spawnRateEma = 0;
-let lastCompletedRideCount = 0;
-let busyErrorIntegral = 0;
 let eventWrapCache = new WeakMap();
 let eventWrapCacheWidth = -1;
 let cachedEventContentHeight = 0;
@@ -43,6 +44,8 @@ let batchTargetSeconds = batchTargetHours * 60 * 60;
 let batchRunActive = false;
 let batchRunDone = false;
 let batchProgress = 0;
+const povCameraZoom = 1.6;
+const povCameraYOffset = 120;
 let carImg = new Image();
 let carImgBusy = new Image();
 carImgBusy.src = "./assets/car-red.png";
@@ -96,9 +99,6 @@ function draw()
                 simAccumulator -= 1/120;
                 stepCount += 1;
             }
-
-            if (stepCount === 8 && simAccumulator >= 1/120)
-                simAccumulator = 0;
         }
         else
             simAccumulator = 0;
@@ -125,12 +125,22 @@ function draw()
     //text only mode
     if (!textOnlyMode)
     {
+        validateSelectedDriver();
+        if (isHighSpeedChartMode())
+        {
+            exitDriverPovMode();
+            drawHighSpeedCharts();
+        }
+        else
+            drawSimulationWorld();
         ctx.fillStyle = "#ffffff"
         ctx.fillRect(1200, 0, 12, canvas.height);
-        drawGrid(size);
-        drawRoute();
-        drawDrivers();
-        drawRiders();
+        if (!isHighSpeedChartMode() && driverPovMode && selectedDriver !== null)
+        {
+            updateDriverNotifications();
+            drawDriverPovHud();
+            drawDriverNotifications();
+        }
     }
 
     displayStats();
@@ -140,37 +150,13 @@ function draw()
 //decides wether or not to spawn a rider
 function spawnController(deltaSeconds)
 {
-    const driverCount = Simulation.driverList.size;
-    const controllerSeconds = deltaSeconds * 60 * (Simulation.simSpeed / Simulation.baseSimSpeed);
-    const waitPerDriver = Simulation.dispatchEngine.waitingCount / driverCount;
-    const completionRate = (Simulation.dispatchEngine.rideAmount - lastCompletedRideCount) / controllerSeconds;
-    const desiredWaitPerDriver = targetBusyRatio <= 1 ? 0.005 : (targetBusyRatio - 1) * 0.30;
-    const busyError = (Math.min(targetBusyRatio, 1)) - ((driverCount - Simulation.dispatchEngine.availableCount) / driverCount);
-
-    completionRateEma += (completionRate - completionRateEma) * 0.10;
-    lastCompletedRideCount = Simulation.dispatchEngine.rideAmount;
-    busyErrorIntegral += busyError * controllerSeconds;
-    busyErrorIntegral = Math.max(-120, Math.min(120, busyErrorIntegral));
-
-    let rate = completionRateEma;
-    rate += busyError * driverCount * 0.45;
-    rate += busyErrorIntegral * driverCount * 0.015;
-    rate += (desiredWaitPerDriver - waitPerDriver) * driverCount * 0.20;
-
-    if (waitPerDriver > desiredWaitPerDriver + 0.03)
-        rate -= (waitPerDriver - (desiredWaitPerDriver + 0.03)) * driverCount * 2.8;
-
-    rate = Math.max(0, Math.min(rate, driverCount * 0.5));
-    spawnRateEma += (rate - spawnRateEma) * 0.20;
-    spawnBudget += spawnRateEma * controllerSeconds;
-
-    while (spawnBudget >= 1)
+    Spawner.update(deltaSeconds, Simulation, targetBusyRatio, () =>
     {
         spawnRider(riderLength);
         riderLength += 1;
-        spawnBudget -= 1;
-    }
+    });
 }
+
 
 //add a rider with their own properties
 function spawnRider(id)
@@ -379,11 +365,7 @@ function seedSimulation(driverCount = 10, riderCount = 10)
 {
     riderLength = 0;
     nextDriverId = 0;
-    spawnBudget = 0;
-    completionRateEma = 0;
-    spawnRateEma = 0;
-    lastCompletedRideCount = 0;
-    busyErrorIntegral = 0;
+    Spawner.reset();
 
     for (let i = 0; i < driverCount; i++)
     {
@@ -398,50 +380,6 @@ function seedSimulation(driverCount = 10, riderCount = 10)
     }
 }
 
-function resetFrameTiming()
-{
-    lastFrameTime = performance.now();
-    simAccumulator = 0;
-}
-
-function resetUiState()
-{
-    batchRunActive = false;
-    batchRunDone = false;
-    batchProgress = 0;
-    statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
-    activeListSubTab = "all";
-    resetFrameTiming();
-    invalidateEventLayoutCache();
-}
-
-function resetSimulationState(configureSimulation, driverCount = 10, riderCount = 10)
-{
-    Simulation = new SimulationController();
-    resetUiState();
-    configureSimulation();
-    seedSimulation(driverCount, riderCount);
-}
-
-function resetSimulationForBatch()
-{
-    resetSimulationState(() =>
-    {
-        Simulation.simSpeed = Simulation.baseSimSpeed;
-        Simulation.pause = 1;
-        Simulation.loggingEnabled = true;
-        activeSpeedMultiplier = 1;
-    });
-}
-
-function resetSimulationForDriverCount(driverCount)
-{
-    resetSimulationState(() =>
-    {
-        Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
-        Simulation.pause = 1;
-    }, driverCount, 10);
-}
 
 function startBatchRun()
 {
@@ -519,7 +457,311 @@ function drawManhattanRoute(fromX, fromY, toX, toY)
     ctx.stroke();
 }
 
+function validateSelectedDriver()
+{
+    if (!driverPovMode || selectedDriver === null)
+        return;
+
+    let curr = Simulation.driverList.head;
+    while (curr !== null)
+    {
+        if (curr === selectedDriver)
+            return;
+        curr = curr.next;
+    }
+
+    exitDriverPovMode();
+}
+
+function drawSimulationWorld()
+{
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, width, height);
+    ctx.clip();
+
+    if (driverPovMode && selectedDriver !== null)
+    {
+        ctx.translate(width / 2, (height / 2) + povCameraYOffset);
+        ctx.scale(povCameraZoom, povCameraZoom);
+        ctx.translate(-selectedDriver.location[0], -selectedDriver.location[1]);
+    }
+
+    drawGrid(size);
+    drawRoute();
+    drawDrivers();
+    drawRiders();
+    ctx.restore();
+}
+
+function isHighSpeedChartMode()
+{
+    return activeSpeedMultiplier === 30 || activeSpeedMultiplier === 60;
+}
+
+function drawBarGroup(title, x, y, width, values, maxValue)
+{
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 22px serif";
+    ctx.fillText(title, x, y);
+
+    const barX = x + 170;
+    const barWidth = width - 200;
+    const rowHeight = 42;
+
+    ctx.font = "16px serif";
+    for (let i = 0; i < values.length; i++)
+    {
+        const rowY = y + 24 + i * rowHeight;
+        const ratio = maxValue > 0 ? values[i].value / maxValue : 0;
+        const fillWidth = Math.max(0, Math.round(barWidth * ratio));
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(values[i].label + ": " + values[i].value, x, rowY + 18);
+        ctx.fillStyle = "#3b3b3b";
+        ctx.fillRect(barX, rowY, barWidth, 22);
+        ctx.fillStyle = values[i].color;
+        ctx.fillRect(barX, rowY, fillWidth, 22);
+    }
+}
+
+function drawHighSpeedCharts()
+{
+    const driverStates = {
+        available: Simulation.dispatchEngine.availableCount,
+        pickingUp: Simulation.driverList.count("PICKING UP"),
+        droppingOff: Simulation.driverList.count("DROPPING OFF")
+    };
+    const riderWaiting = Simulation.riderList.count("WAITING") + Simulation.priorityList.count("WAITING");
+    const riderPickedUp = Simulation.riderList.count("PICKED UP") + Simulation.priorityList.count("PICKED UP");
+    const riderStates = {
+        total: riderWaiting + riderPickedUp,
+        waiting: riderWaiting,
+        pickedUp: riderPickedUp
+    };
+    const chartX = 50;
+    const chartWidth = width - 100;
+    const driverValues = [
+        { label: "Available", value: driverStates.available, color: "#1ecb4f" },
+        { label: "Picking up", value: driverStates.pickingUp, color: "#d44848" },
+        { label: "Dropping off", value: driverStates.droppingOff, color: "#e68a2e" }
+    ];
+    const riderValues = [
+        { label: "Total", value: riderStates.total, color: "#3d88ff" },
+        { label: "Waiting", value: riderStates.waiting, color: "#d44848" },
+        { label: "Picked up", value: riderStates.pickedUp, color: "#e68a2e" }
+    ];
+    const driverMax = Math.max(1, Simulation.driverList.size);
+    const riderMax = Math.max(1, Simulation.driverList.size, riderStates.total);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px serif";
+    ctx.fillText("High Speed Summary Mode", 50, 52);
+    ctx.font = "18px serif";
+    ctx.fillText("Map rendering is disabled at " + activeSpeedMultiplier + "X to keep the simulation readable.", 50, 82);
+
+    drawBarGroup("Drivers", chartX, 140, chartWidth, driverValues, driverMax);
+    drawBarGroup("Riders", chartX, 340, chartWidth, riderValues, riderMax);
+}
+
+function enterDriverPovMode(driver)
+{
+    selectedDriver = driver;
+    driverPovMode = true;
+    selectedDriverLastAssignedRiderId = driver.assignedRider ? driver.assignedRider.id : null;
+    driverNotifications = [];
+}
+
+function exitDriverPovMode()
+{
+    driverPovMode = false;
+    selectedDriver = null;
+    selectedDriverLastAssignedRiderId = null;
+    driverNotifications = [];
+}
+
+function updateDriverNotifications()
+{
+    if (selectedDriver === null)
+        return;
+
+    const currentAssignedRiderId = selectedDriver.assignedRider ? selectedDriver.assignedRider.id : null;
+    if (currentAssignedRiderId !== null && currentAssignedRiderId !== selectedDriverLastAssignedRiderId)
+    {
+        const rider = selectedDriver.assignedRider;
+        const fareText = Number.isFinite(rider.cost) ? " score " + Math.round(rider.cost) : "";
+        driverNotifications.unshift({
+            text: "Assigned rider " + rider.id + " (" + rider.passengers + " people)" + fareText,
+            createdAt: performance.now()
+        });
+        if (driverNotifications.length > 4)
+            driverNotifications.length = 4;
+    }
+
+    selectedDriverLastAssignedRiderId = currentAssignedRiderId;
+    const now = performance.now();
+    driverNotifications = driverNotifications.filter((notification) => now - notification.createdAt < 3000);
+}
+
+function getWrappedHudLines(text, maxWidth, font = "16px serif")
+{
+    ctx.font = font;
+    const words = String(text).split(" ");
+    const lines = [];
+    let currentLine = "";
+
+    for (let i = 0; i < words.length; i++)
+    {
+        const testLine = currentLine === "" ? words[i] : currentLine + " " + words[i];
+        if (ctx.measureText(testLine).width <= maxWidth || currentLine === "")
+            currentLine = testLine;
+        else
+        {
+            lines.push(currentLine);
+            currentLine = words[i];
+        }
+    }
+
+    if (currentLine !== "")
+        lines.push(currentLine);
+
+    return lines.length > 0 ? lines : [""];
+}
+
+function getDriverPovHudLayout()
+{
+    const panelX = 18;
+    const panelY = 18;
+    const panelWidth = 420;
+    const rightColumnX = 220;
+    const backButtonWidth = 52;
+    const backButtonHeight = 24;
+    const backButtonX = panelX + panelWidth - backButtonWidth - 18;
+    const backButtonY = 24;
+    const amenitiesText = selectedDriver && selectedDriver.amenities.length > 0 ? selectedDriver.amenities.join(", ") : "None";
+    const amenitiesLines = getWrappedHudLines("Amenities: " + amenitiesText, 190);
+    const panelHeight = 172 + Math.max(0, amenitiesLines.length - 1) * 20;
+
+    return {
+        panelX,
+        panelY,
+        panelWidth,
+        panelHeight,
+        rightColumnX,
+        backButtonX,
+        backButtonY,
+        backButtonWidth,
+        backButtonHeight,
+        amenitiesLines
+    };
+}
+
+function drawDriverPovHud()
+{
+    if (selectedDriver === null)
+        return;
+
+    const layout = getDriverPovHudLayout();
+    ctx.fillStyle = "rgba(18, 18, 18, 0.88)";
+    ctx.fillRect(layout.panelX, layout.panelY, layout.panelWidth, layout.panelHeight);
+    ctx.fillStyle = "#4f4f4f";
+    ctx.fillRect(layout.backButtonX, layout.backButtonY, layout.backButtonWidth, layout.backButtonHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px serif";
+    ctx.fillText("Driver POV", 32, 44);
+    ctx.font = "14px serif";
+    ctx.fillText("Back", layout.backButtonX + 14, 41);
+
+    ctx.font = "16px serif";
+    ctx.fillText("Driver " + selectedDriver.id, 32, 72);
+    ctx.fillText("State: " + selectedDriver.state, 32, 98);
+    ctx.fillText("Earnings: $" + selectedDriver.profits, 32, 124);
+    ctx.fillText("Trips: " + selectedDriver.tripCount, 32, 150);
+
+    ctx.fillText("Seats: " + selectedDriver.capacity, layout.rightColumnX, 98);
+    ctx.fillText("Location: [" + Math.round(selectedDriver.location[0]) + ", " + Math.round(selectedDriver.location[1]) + "]", layout.rightColumnX, 124);
+    for (let i = 0; i < layout.amenitiesLines.length; i++)
+        ctx.fillText(layout.amenitiesLines[i], layout.rightColumnX, 150 + i * 20);
+}
+
+function drawDriverNotifications()
+{
+    ctx.font = "15px serif";
+    for (let i = 0; i < driverNotifications.length; i++)
+    {
+        const notificationY = 208 + i * 34;
+        ctx.fillStyle = "rgba(28, 28, 28, 0.88)";
+        ctx.fillRect(18, notificationY, 360, 26);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(driverNotifications[i].text, 30, notificationY + 18);
+    }
+}
+
+function getClickedDriver(mouseX, mouseY)
+{
+    let curr = Simulation.driverList.head;
+    while (curr !== null)
+    {
+        const xDist = mouseX - curr.location[0];
+        const yDist = mouseY - curr.location[1];
+        if ((xDist * xDist) + (yDist * yDist) <= 24 * 24)
+            return curr;
+        curr = curr.next;
+    }
+    return null;
+}
+
 //AI IMPLEMENTED \/ \/
+
+function resetFrameTiming()
+{
+    lastFrameTime = performance.now();
+    simAccumulator = 0;
+}
+
+function resetUiState()
+{
+    batchRunActive = false;
+    batchRunDone = false;
+    batchProgress = 0;
+    driverPovMode = false;
+    selectedDriver = null;
+    selectedDriverLastAssignedRiderId = null;
+    driverNotifications = [];
+    statsScrollByTab = { list: 0, events: 0, settings: 0, stats: 0 };
+    activeListSubTab = "all";
+    resetFrameTiming();
+    invalidateEventLayoutCache();
+}
+
+function resetSimulationState(configureSimulation, driverCount = 10, riderCount = 10)
+{
+    Simulation = new SimulationController();
+    resetUiState();
+    configureSimulation();
+    seedSimulation(driverCount, riderCount);
+}
+
+function resetSimulationForBatch()
+{
+    resetSimulationState(() =>
+    {
+        Simulation.simSpeed = Simulation.baseSimSpeed;
+        Simulation.pause = 1;
+        Simulation.loggingEnabled = true;
+        activeSpeedMultiplier = 1;
+    });
+}
+
+function resetSimulationForDriverCount(driverCount)
+{
+    resetSimulationState(() =>
+    {
+        Simulation.simSpeed = baseSimulationSpeed * activeSpeedMultiplier;
+        Simulation.pause = 1;
+    }, driverCount, 10);
+}
+
 function getStatsTabLayout()
 {
     const tabX = statsPanelX + statsPadding;
@@ -587,7 +829,9 @@ function getSpeedButtonItems()
         { label: "0.5X", value: 0.5 },
         { label: "1X", value: 1 },
         { label: "2X", value: 2 },
-        { label: "10X", value: 10 }
+        { label: "10X", value: 10 },
+        { label: "30X", value: 30 },
+        { label: "60X", value: 60 }
     ];
 }
 
@@ -596,7 +840,7 @@ function getSettingsLayout()
     const surgeY = 80 + 8;
     const textModeY = surgeY + 24;
     const controlsY = textModeY + 24;
-    const gridY = controlsY + 28;
+    const gridY = controlsY + 52;
     const driverY = gridY + 28;
     const targetRatioY = driverY + 56;
 
@@ -678,6 +922,8 @@ function spawnSurgeRiders(count = 10)
 function toggleTextOnlyMode()
 {
     textOnlyMode = !textOnlyMode;
+    if (textOnlyMode)
+        exitDriverPovMode();
     statsPanelX = textOnlyMode ? 0 : 1200 + 12;
     canvas.width = textOnlyMode ? 420 : width + 275;
     invalidateEventLayoutCache();
@@ -774,7 +1020,8 @@ function getCachedEventContentHeight(eventLogList, maxWidth, font, lineHeight, e
     let currEvent = eventLogList.tail;
     while (currEvent !== null)
     {
-        const eventText = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+        const eventMessage = (currEvent.event !== undefined) ? currEvent.event : String(currEvent);
+        const eventText = currEvent.time !== undefined ? "[" + currEvent.time + "] " + eventMessage : eventMessage;
         eventContentHeight += (getWrappedEventLines(currEvent, eventText, maxWidth, font).length * lineHeight) + eventGap;
         currEvent = currEvent.prev;
     }
@@ -869,7 +1116,9 @@ function drawSpeedButtons(tab)
     const settingsLayout = getSettingsLayout();
     const startX = statsPanelX + statsPadding + 90 + 6;
     const drawY = (tab === "settings") ? settingsLayout.controlsY : pauseButtonY;
-    drawButtonRow(startX, drawY, 34, speedButtonHeight, 4, getSpeedButtonItems(), activeSpeedMultiplier);
+    const items = getSpeedButtonItems();
+    drawButtonRow(startX, drawY, 34, speedButtonHeight, 4, items.slice(0, 4), activeSpeedMultiplier);
+    drawButtonRow(startX, drawY + speedButtonHeight + 4, 34, speedButtonHeight, 4, items.slice(4), activeSpeedMultiplier);
 }
 
 function drawGridSizeButtons()
@@ -1327,16 +1576,21 @@ function handleListSubTabSelection(mouseX, mouseY)
 
 function handleSpeedSelection(mouseX, mouseY, drawY)
 {
-    const selectedSpeed = getClickedButtonRowValue(
+    const startX = statsPanelX + statsPadding + 90 + 6;
+    const items = getSpeedButtonItems();
+    let selectedSpeed = getClickedButtonRowValue(
         mouseX,
         mouseY,
-        statsPanelX + statsPadding + 90 + 6,
+        startX,
         drawY,
         34,
         speedButtonHeight,
         4,
-        getSpeedButtonItems()
+        items.slice(0, 4)
     );
+
+    if (selectedSpeed === null)
+        selectedSpeed = getClickedButtonRowValue(mouseX, mouseY, startX, drawY + speedButtonHeight + 4, 34, speedButtonHeight, 4, items.slice(4));
 
     if (selectedSpeed === null)
         return false;
@@ -1364,6 +1618,25 @@ function onStatsPanelMouseDown(event)
 {
     const { mouseX, mouseY } = getMousePosition(event);
     const settingsLayout = getSettingsLayout();
+
+    if (!textOnlyMode && !isHighSpeedChartMode() && mouseX <= width)
+    {
+        if (driverPovMode)
+        {
+            const layout = getDriverPovHudLayout();
+            if (isPointInRect(mouseX, mouseY, layout.backButtonX, layout.backButtonY, layout.backButtonWidth, layout.backButtonHeight))
+                exitDriverPovMode();
+        }
+        else
+        {
+            const clickedDriver = getClickedDriver(mouseX, mouseY);
+            if (clickedDriver !== null)
+            {
+                enterDriverPovMode(clickedDriver);
+                return;
+            }
+        }
+    }
 
     if (batchRunDone)
     {

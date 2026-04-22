@@ -2,7 +2,7 @@ export default class Scoring
 {
     constructor()
     {
-        this.maxWaitBonus = 250;
+
     }
 
     scoreDistance(driver, rider)
@@ -43,18 +43,13 @@ export default class Scoring
 
     scoreWaitTime(rider)
     {
-        const clampedFraction = Math.max(0, Math.min(1, 1 - (rider.waitTimer / rider.initialWaitTimer)));
-        const weightedFraction = clampedFraction * clampedFraction;
-        return -(weightedFraction * this.maxWaitBonus);
+        const initialWaitTimer = Math.max(1, rider.initialWaitTimer ?? 600);
+        const waitedFraction = Math.max(0, Math.min(1, 1 - (rider.waitTimer / initialWaitTimer)));
+        return -(waitedFraction * waitedFraction * 250);
     }
 
     calculateScore(driver, rider)
     {
-        return(
-            this.scoreDistance(driver, rider) +
-            this.scoreCapacity(driver, rider) +
-            this.scoreAmenities(driver, rider) +
-            this.scoreWaitTime(rider)
-        );
+        return(this.scoreDistance(driver, rider) + this.scoreCapacity(driver, rider) + this.scoreAmenities(driver, rider) + this.scoreWaitTime(rider));
     }
 }

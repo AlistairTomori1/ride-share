@@ -42,6 +42,10 @@ By the end of the project, our plan was for the system to include:
 - event logging with a linked list
 - browser-based visualization
 - adjustable simulation speed
+- driver POV mode
+- batch simulation mode
+- high-speed summary charts at extreme speeds
+- downloadable full event log
 - documentation, analysis, and submission evidence
 
 ## Main Parts of the Project
@@ -66,7 +70,7 @@ The dispatch side of the project was planned around matching riders to the best 
 Main dispatch goals:
 - scan available drivers for a new rider
 - scan waiting riders when a driver becomes free
-- score matches using distance, capacity, and amenities
+- score matches using distance, wait time, capacity, and amenities
 - reject impossible matches using `Infinity`
 - keep driver and rider state changes consistent
 
@@ -76,6 +80,7 @@ The project also needed to behave like a real simulation over time.
 
 Main simulation goals:
 - continuously spawn riders
+- tune rider demand toward an average busy-driver target instead of using a fixed interval
 - move drivers on the grid
 - pick up and drop off riders
 - expire riders if they wait too long
@@ -90,7 +95,9 @@ Main interface goals:
 - show text-based lists
 - show event history
 - support pausing and speed changes
+- support driver POV inspection
 - support text-only and batch-run modes for larger tests
+- support high-speed chart mode when the map is not useful at extreme speeds
 - show summary stats clearly
 
 ## Phase Breakdown
@@ -149,6 +156,8 @@ Main interface goals:
 - stats tab
 - text-only mode
 - batch simulation mode
+- driver POV mode
+- high-speed summary charts
 - downloadable event log
 - refactoring notes
 - submission documents
