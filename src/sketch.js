@@ -45,6 +45,8 @@ let batchTargetSeconds = batchTargetHours * 60 * 60;
 let batchRunActive = false;
 let batchRunDone = false;
 let batchProgress = 0;
+let batchRealStartTime = 0;
+let batchRealRunTime = 0;
 const povCameraZoom = 1.6;
 const povCameraYOffset = 120;
 let carImg = new Image();
@@ -388,6 +390,8 @@ function startBatchRun()
         return;
 
     resetSimulationForBatch();
+    batchRealStartTime = performance.now();
+    batchRealRunTime = 0;
     batchRunActive = true;
     activeStatsTab = "stats";
     runBatchChunk();
@@ -422,6 +426,7 @@ function runBatchChunk()
 
 function finishBatchRun()
 {
+    batchRealRunTime = performance.now() - batchRealStartTime;
     batchRunActive = false;
     batchRunDone = true;
     batchProgress = 1;
@@ -1046,6 +1051,20 @@ function getStatsCardData()
     ];
 }
 
+function getFormattedRealRunTime(milliseconds)
+{
+    if (milliseconds < 1000)
+        return Math.round(milliseconds) + " ms";
+
+    const seconds = milliseconds / 1000;
+    if (seconds < 60)
+        return seconds.toFixed(2) + " seconds";
+
+    const minutes = Math.floor(seconds / 60);
+    const leftoverSeconds = Math.round(seconds % 60);
+    return minutes + " min " + leftoverSeconds + " sec";
+}
+
 function getEndSimLayout()
 {
     const panelWidth = Math.min(520, canvas.width - 80);
@@ -1054,7 +1073,8 @@ function getEndSimLayout()
     const cardHeight = 72;
     const cardGap = 12;
     const statsCards = getStatsCardData();
-    const panelHeight = 120 + statsCards.length * (cardHeight + cardGap) + 36;
+    const cardStartY = panelY + 142;
+    const panelHeight = 144 + statsCards.length * (cardHeight + cardGap) + 36;
     const downloadButtonX = panelX + 18;
     const downloadButtonY = panelY + panelHeight - 52;
     const backButtonX = panelX + panelWidth - 138;
@@ -1066,6 +1086,7 @@ function getEndSimLayout()
         panelY,
         cardHeight,
         cardGap,
+        cardStartY,
         statsCards,
         panelHeight,
         downloadButtonX,
@@ -1502,10 +1523,11 @@ function drawEndSimScreen()
     ctx.font = "16px serif";
     ctx.fillText("Duration: " + batchTargetHours + " hours", panelX + 24, panelY + 72);
     ctx.fillText("End time: " + Simulation.getFormattedSimTime(), panelX + 24, panelY + 96);
+    ctx.fillText("Real run time: " + getFormattedRealRunTime(batchRealRunTime), panelX + 24, panelY + 120);
 
     for (let i = 0; i < statsCards.length; i++)
     {
-        const cardY = panelY + 118 + i * (cardHeight + cardGap);
+        const cardY = layout.cardStartY + i * (cardHeight + cardGap);
         ctx.fillStyle = "#3f3f3f";
         ctx.fillRect(panelX + 18, cardY, panelWidth - 36, cardHeight);
         ctx.fillStyle = "#ffffff";
