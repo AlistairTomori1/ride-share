@@ -77,6 +77,8 @@ export default class SpawnController
         this.spawnRidersAtRate(this.spawnRate, simSeconds, spawnRider);
     }
 
+
+    //ai implemented
     updateRealistic(deltaSeconds, simulation, spawnRider)
     {
         const driverCount = Math.max(1, simulation.driverList.size);
@@ -111,6 +113,8 @@ export default class SpawnController
         this.warmupTime = Math.max(0, this.warmupTime - simSeconds);
         return amount;
     }
+
+    //ai end
 
     getServiceMinutes(simulation)
     {

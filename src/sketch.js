@@ -55,7 +55,7 @@ carImgBusy.src = "./assets/car-red.png";
 carImg.src = "./assets/car-green.png";
 
 
-
+//AI assisted
 function setup()
 {
     //define the canvase and start draw loop
@@ -350,6 +350,7 @@ function drawRiders()
 }
 
 //event log download
+//AI IMPLEMENTED
 function downloadEventLog()
 {
     const text = Simulation.dispatchEngine.fullEventLogLines.join("\n");
@@ -363,6 +364,7 @@ function downloadEventLog()
 
     URL.revokeObjectURL(url);
 }
+//AI END ^
 
 function seedSimulation(driverCount = 10, riderCount = 10)
 {
@@ -397,6 +399,7 @@ function startBatchRun()
     runBatchChunk();
 }
 
+//AI ASSISTED
 function runBatchChunk()
 {
     if (!batchRunActive)
@@ -423,7 +426,7 @@ function runBatchChunk()
 
     setTimeout(runBatchChunk, 0);
 }
-
+//AI END ^
 function finishBatchRun()
 {
     batchRealRunTime = performance.now() - batchRealStartTime;
@@ -478,7 +481,7 @@ function validateSelectedDriver()
 
     exitDriverPovMode();
 }
-
+//AI ASSISTED
 function drawSimulationWorld()
 {
     ctx.save();
@@ -499,6 +502,8 @@ function drawSimulationWorld()
     drawRiders();
     ctx.restore();
 }
+//AI END ^
+
 
 function isHighSpeedChartMode()
 {
@@ -511,8 +516,8 @@ function drawBarGroup(title, x, y, width, values, maxValue)
     ctx.font = "bold 22px serif";
     ctx.fillText(title, x, y);
 
-    const barX = x + 170;
-    const barWidth = width - 200;
+    const barX = x + 250;
+    const barWidth = width - 280;
     const rowHeight = 42;
 
     ctx.font = "16px serif";
@@ -523,7 +528,7 @@ function drawBarGroup(title, x, y, width, values, maxValue)
         const fillWidth = Math.max(0, Math.round(barWidth * ratio));
 
         ctx.fillStyle = "#ffffff";
-        ctx.fillText(values[i].label + ": " + values[i].value, x, rowY + 18);
+        ctx.fillText(values[i].label + ": " + values[i].value + " avg " + Math.round(values[i].average * 10) / 10, x, rowY + 18);
         ctx.fillStyle = "#3b3b3b";
         ctx.fillRect(barX, rowY, barWidth, 22);
         ctx.fillStyle = values[i].color;
@@ -533,6 +538,7 @@ function drawBarGroup(title, x, y, width, values, maxValue)
 
 function drawHighSpeedCharts()
 {
+    const averages = Simulation.getHighSpeedAverages();
     const driverStates = {
         available: Simulation.dispatchEngine.availableCount,
         pickingUp: Simulation.driverList.count("PICKING UP"),
@@ -548,14 +554,14 @@ function drawHighSpeedCharts()
     const chartX = 50;
     const chartWidth = width - 100;
     const driverValues = [
-        { label: "Available", value: driverStates.available, color: "#1ecb4f" },
-        { label: "Picking up", value: driverStates.pickingUp, color: "#d44848" },
-        { label: "Dropping off", value: driverStates.droppingOff, color: "#e68a2e" }
+        { label: "Available", value: driverStates.available, average: averages.drivers.available, color: "#1ecb4f" },
+        { label: "Picking up", value: driverStates.pickingUp, average: averages.drivers.pickingUp, color: "#d44848" },
+        { label: "Dropping off", value: driverStates.droppingOff, average: averages.drivers.droppingOff, color: "#e68a2e" }
     ];
     const riderValues = [
-        { label: "Total", value: riderStates.total, color: "#3d88ff" },
-        { label: "Waiting", value: riderStates.waiting, color: "#d44848" },
-        { label: "Picked up", value: riderStates.pickedUp, color: "#e68a2e" }
+        { label: "Total", value: riderStates.total, average: averages.riders.total, color: "#3d88ff" },
+        { label: "Waiting", value: riderStates.waiting, average: averages.riders.waiting, color: "#d44848" },
+        { label: "Picked up", value: riderStates.pickedUp, average: averages.riders.pickedUp, color: "#e68a2e" }
     ];
     const driverMax = Math.max(1, Simulation.driverList.size);
     const riderMax = Math.max(1, Simulation.driverList.size, riderStates.total);
@@ -570,6 +576,7 @@ function drawHighSpeedCharts()
     drawBarGroup("Riders", chartX, 340, chartWidth, riderValues, riderMax);
 }
 
+//AI ASSISTED
 function enterDriverPovMode(driver)
 {
     selectedDriver = driver;
@@ -608,6 +615,7 @@ function updateDriverNotifications()
     const now = performance.now();
     driverNotifications = driverNotifications.filter((notification) => now - notification.createdAt < 3000);
 }
+//AI END ^
 
 function getWrappedHudLines(text, maxWidth, font = "16px serif")
 {
@@ -634,6 +642,7 @@ function getWrappedHudLines(text, maxWidth, font = "16px serif")
     return lines.length > 0 ? lines : [""];
 }
 
+//AI IMPLEMENTED TO BOTTOM \/
 function getDriverPovHudLayout()
 {
     const panelX = 18;
@@ -716,8 +725,6 @@ function getClickedDriver(mouseX, mouseY)
     }
     return null;
 }
-
-//AI IMPLEMENTED \/ \/
 
 function resetFrameTiming()
 {

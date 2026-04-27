@@ -40,13 +40,14 @@ export default class Scoring
             return(0);
 
     }
-
+    //AI assisted
     scoreWaitTime(rider)
     {
         const initialWaitTimer = Math.max(1, rider.initialWaitTimer ?? 600);
         const waitedFraction = Math.max(0, Math.min(1, 1 - (rider.waitTimer / initialWaitTimer)));
         return -(waitedFraction * waitedFraction * 250);
     }
+    //AI END
 
     calculateScore(driver, rider)
     {
