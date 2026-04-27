@@ -45,6 +45,8 @@ let batchTargetSeconds = batchTargetHours * 60 * 60;
 let batchRunActive = false;
 let batchRunDone = false;
 let batchProgress = 0;
+let batchRealStartTime = 0;
+let batchRealRunTime = 0;
 const povCameraZoom = 1.6;
 const povCameraYOffset = 120;
 let carImg = new Image();
@@ -53,7 +55,7 @@ carImgBusy.src = "./assets/car-red.png";
 carImg.src = "./assets/car-green.png";
 
 
-
+//AI assisted
 function setup()
 {
     //define the canvase and start draw loop
@@ -348,6 +350,7 @@ function drawRiders()
 }
 
 //event log download
+//AI IMPLEMENTED
 function downloadEventLog()
 {
     const text = Simulation.dispatchEngine.fullEventLogLines.join("\n");
@@ -361,6 +364,7 @@ function downloadEventLog()
 
     URL.revokeObjectURL(url);
 }
+//AI END ^
 
 function seedSimulation(driverCount = 10, riderCount = 10)
 {
@@ -388,11 +392,14 @@ function startBatchRun()
         return;
 
     resetSimulationForBatch();
+    batchRealStartTime = performance.now();
+    batchRealRunTime = 0;
     batchRunActive = true;
     activeStatsTab = "stats";
     runBatchChunk();
 }
 
+//AI ASSISTED
 function runBatchChunk()
 {
     if (!batchRunActive)
@@ -419,9 +426,10 @@ function runBatchChunk()
 
     setTimeout(runBatchChunk, 0);
 }
-
+//AI END ^
 function finishBatchRun()
 {
+    batchRealRunTime = performance.now() - batchRealStartTime;
     batchRunActive = false;
     batchRunDone = true;
     batchProgress = 1;
@@ -473,7 +481,7 @@ function validateSelectedDriver()
 
     exitDriverPovMode();
 }
-
+//AI ASSISTED
 function drawSimulationWorld()
 {
     ctx.save();
@@ -494,6 +502,8 @@ function drawSimulationWorld()
     drawRiders();
     ctx.restore();
 }
+//AI END ^
+
 
 function isHighSpeedChartMode()
 {
@@ -506,8 +516,8 @@ function drawBarGroup(title, x, y, width, values, maxValue)
     ctx.font = "bold 22px serif";
     ctx.fillText(title, x, y);
 
-    const barX = x + 170;
-    const barWidth = width - 200;
+    const barX = x + 250;
+    const barWidth = width - 280;
     const rowHeight = 42;
 
     ctx.font = "16px serif";
@@ -518,7 +528,7 @@ function drawBarGroup(title, x, y, width, values, maxValue)
         const fillWidth = Math.max(0, Math.round(barWidth * ratio));
 
         ctx.fillStyle = "#ffffff";
-        ctx.fillText(values[i].label + ": " + values[i].value, x, rowY + 18);
+        ctx.fillText(values[i].label + ": " + values[i].value + " avg " + Math.round(values[i].average * 10) / 10, x, rowY + 18);
         ctx.fillStyle = "#3b3b3b";
         ctx.fillRect(barX, rowY, barWidth, 22);
         ctx.fillStyle = values[i].color;
@@ -528,6 +538,7 @@ function drawBarGroup(title, x, y, width, values, maxValue)
 
 function drawHighSpeedCharts()
 {
+    const averages = Simulation.getHighSpeedAverages();
     const driverStates = {
         available: Simulation.dispatchEngine.availableCount,
         pickingUp: Simulation.driverList.count("PICKING UP"),
@@ -543,14 +554,14 @@ function drawHighSpeedCharts()
     const chartX = 50;
     const chartWidth = width - 100;
     const driverValues = [
-        { label: "Available", value: driverStates.available, color: "#1ecb4f" },
-        { label: "Picking up", value: driverStates.pickingUp, color: "#d44848" },
-        { label: "Dropping off", value: driverStates.droppingOff, color: "#e68a2e" }
+        { label: "Available", value: driverStates.available, average: averages.drivers.available, color: "#1ecb4f" },
+        { label: "Picking up", value: driverStates.pickingUp, average: averages.drivers.pickingUp, color: "#d44848" },
+        { label: "Dropping off", value: driverStates.droppingOff, average: averages.drivers.droppingOff, color: "#e68a2e" }
     ];
     const riderValues = [
-        { label: "Total", value: riderStates.total, color: "#3d88ff" },
-        { label: "Waiting", value: riderStates.waiting, color: "#d44848" },
-        { label: "Picked up", value: riderStates.pickedUp, color: "#e68a2e" }
+        { label: "Total", value: riderStates.total, average: averages.riders.total, color: "#3d88ff" },
+        { label: "Waiting", value: riderStates.waiting, average: averages.riders.waiting, color: "#d44848" },
+        { label: "Picked up", value: riderStates.pickedUp, average: averages.riders.pickedUp, color: "#e68a2e" }
     ];
     const driverMax = Math.max(1, Simulation.driverList.size);
     const riderMax = Math.max(1, Simulation.driverList.size, riderStates.total);
@@ -565,6 +576,7 @@ function drawHighSpeedCharts()
     drawBarGroup("Riders", chartX, 340, chartWidth, riderValues, riderMax);
 }
 
+//AI ASSISTED
 function enterDriverPovMode(driver)
 {
     selectedDriver = driver;
@@ -603,6 +615,7 @@ function updateDriverNotifications()
     const now = performance.now();
     driverNotifications = driverNotifications.filter((notification) => now - notification.createdAt < 3000);
 }
+//AI END ^
 
 function getWrappedHudLines(text, maxWidth, font = "16px serif")
 {
@@ -629,6 +642,7 @@ function getWrappedHudLines(text, maxWidth, font = "16px serif")
     return lines.length > 0 ? lines : [""];
 }
 
+//AI IMPLEMENTED TO BOTTOM \/
 function getDriverPovHudLayout()
 {
     const panelX = 18;
@@ -711,8 +725,6 @@ function getClickedDriver(mouseX, mouseY)
     }
     return null;
 }
-
-//AI IMPLEMENTED \/ \/
 
 function resetFrameTiming()
 {
@@ -1046,6 +1058,20 @@ function getStatsCardData()
     ];
 }
 
+function getFormattedRealRunTime(milliseconds)
+{
+    if (milliseconds < 1000)
+        return Math.round(milliseconds) + " ms";
+
+    const seconds = milliseconds / 1000;
+    if (seconds < 60)
+        return seconds.toFixed(2) + " seconds";
+
+    const minutes = Math.floor(seconds / 60);
+    const leftoverSeconds = Math.round(seconds % 60);
+    return minutes + " min " + leftoverSeconds + " sec";
+}
+
 function getEndSimLayout()
 {
     const panelWidth = Math.min(520, canvas.width - 80);
@@ -1054,7 +1080,8 @@ function getEndSimLayout()
     const cardHeight = 72;
     const cardGap = 12;
     const statsCards = getStatsCardData();
-    const panelHeight = 120 + statsCards.length * (cardHeight + cardGap) + 36;
+    const cardStartY = panelY + 142;
+    const panelHeight = 144 + statsCards.length * (cardHeight + cardGap) + 36;
     const downloadButtonX = panelX + 18;
     const downloadButtonY = panelY + panelHeight - 52;
     const backButtonX = panelX + panelWidth - 138;
@@ -1066,6 +1093,7 @@ function getEndSimLayout()
         panelY,
         cardHeight,
         cardGap,
+        cardStartY,
         statsCards,
         panelHeight,
         downloadButtonX,
@@ -1502,10 +1530,11 @@ function drawEndSimScreen()
     ctx.font = "16px serif";
     ctx.fillText("Duration: " + batchTargetHours + " hours", panelX + 24, panelY + 72);
     ctx.fillText("End time: " + Simulation.getFormattedSimTime(), panelX + 24, panelY + 96);
+    ctx.fillText("Real run time: " + getFormattedRealRunTime(batchRealRunTime), panelX + 24, panelY + 120);
 
     for (let i = 0; i < statsCards.length; i++)
     {
-        const cardY = panelY + 118 + i * (cardHeight + cardGap);
+        const cardY = layout.cardStartY + i * (cardHeight + cardGap);
         ctx.fillStyle = "#3f3f3f";
         ctx.fillRect(panelX + 18, cardY, panelWidth - 36, cardHeight);
         ctx.fillStyle = "#ffffff";

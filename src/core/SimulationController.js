@@ -36,6 +36,8 @@ export default class SimulationController
         this.totalRideTime = 0;
         this.busyRatioTimeTotal = 0;
         this.averageBusy = 0;
+        this.driverStateTimeTotal = { available: 0, pickingUp: 0, droppingOff: 0 };
+        this.riderStateTimeTotal = { total: 0, waiting: 0, pickedUp: 0 };
         this.cachedFormattedSimTime = "";
         this.cachedFormattedMinute = -1;
 
@@ -47,6 +49,7 @@ export default class SimulationController
     }
 
     //this gets the time
+    //AI implemented
     getFormattedSimTime()
     {
         const currentMinute = Math.floor(this.time / 60);
@@ -64,7 +67,7 @@ export default class SimulationController
         }
         return this.cachedFormattedSimTime;
     }
-
+    //AI END ^
     initializeEventExportLog()
     {
         this.dispatchEngine.fullEventLogLines = [];
@@ -116,6 +119,16 @@ export default class SimulationController
         let busyRatio = totalDrivers > 0 ? busyDrivers / totalDrivers : 0;
         this.busyRatioTimeTotal += busyRatio * clockSeconds;
         this.averageBusy = this.time > 0 ? (this.busyRatioTimeTotal / this.time) * 100 : 0;
+
+        let waitingRiders = this.riderList.count("WAITING") + this.priorityList.count("WAITING");
+        let pickedUpRiders = this.riderList.count("PICKED UP") + this.priorityList.count("PICKED UP");
+
+        this.driverStateTimeTotal.available += this.dispatchEngine.availableCount * clockSeconds;
+        this.driverStateTimeTotal.pickingUp += this.driverList.count("PICKING UP") * clockSeconds;
+        this.driverStateTimeTotal.droppingOff += this.driverList.count("DROPPING OFF") * clockSeconds;
+        this.riderStateTimeTotal.waiting += waitingRiders * clockSeconds;
+        this.riderStateTimeTotal.pickedUp += pickedUpRiders * clockSeconds;
+        this.riderStateTimeTotal.total += (waitingRiders + pickedUpRiders) * clockSeconds;
 
     }
     
@@ -282,6 +295,7 @@ export default class SimulationController
     }
 
     //surge controller
+    //AI assisted
     updateSurge()
     {
         let ratio = this.dispatchEngine.waitingCount / Math.max(1, this.driverList.size);
@@ -304,5 +318,30 @@ export default class SimulationController
     {
         while(this.dispatchEngine.eventLog.size > 200)
             this.dispatchEngine.eventLog.remove(this.dispatchEngine.eventLog.head);
+    }
+
+    //AI ASSISTED
+    getHighSpeedAverages()
+    {
+        if (this.time <= 0)
+        {
+            return {
+                drivers: { available: 0, pickingUp: 0, droppingOff: 0 },
+                riders: { total: 0, waiting: 0, pickedUp: 0 }
+            };
+        }
+
+        return {
+            drivers: {
+                available: this.driverStateTimeTotal.available / this.time,
+                pickingUp: this.driverStateTimeTotal.pickingUp / this.time,
+                droppingOff: this.driverStateTimeTotal.droppingOff / this.time
+            },
+            riders: {
+                total: this.riderStateTimeTotal.total / this.time,
+                waiting: this.riderStateTimeTotal.waiting / this.time,
+                pickedUp: this.riderStateTimeTotal.pickedUp / this.time
+            }
+        };
     }
 }
